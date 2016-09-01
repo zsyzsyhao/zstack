@@ -8,22 +8,32 @@ import org.zstack.core.Platform;
 import org.zstack.core.cloudbus.CloudBus;
 import org.zstack.core.cloudbus.MessageSafe;
 import org.zstack.core.db.DatabaseFacade;
+import org.zstack.core.db.SimpleQuery;
 import org.zstack.core.thread.AsyncThread;
 import org.zstack.core.thread.ThreadFacade;
 import org.zstack.header.AbstractService;
 import org.zstack.header.core.keystore.KeystoreInventory;
 import org.zstack.header.core.keystore.KeystoreVO;
+import org.zstack.header.core.keystore.KeystoreVO_;
+import org.zstack.header.exception.CloudRuntimeException;
 import org.zstack.header.identity.AccountType;
 import org.zstack.header.identity.AccountVO;
+import org.zstack.header.image.APIGetCandidateBackupStorageForCreatingImageReply;
 import org.zstack.header.managementnode.ManagementNodeReadyExtensionPoint;
 import org.zstack.header.message.APICreateMessage;
 import org.zstack.header.message.APIMessage;
 import org.zstack.header.message.Message;
 import org.zstack.header.rest.RESTFacade;
+import org.zstack.header.storage.backup.BackupStorageInventory;
+import org.zstack.header.storage.backup.BackupStorageState;
+import org.zstack.header.storage.backup.BackupStorageStatus;
+import org.zstack.header.storage.backup.BackupStorageVO;
 import org.zstack.utils.Utils;
 import org.zstack.utils.logging.CLogger;
 
 import javax.persistence.TypedQuery;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by miao on 16-8-15.
@@ -41,39 +51,20 @@ public class KeystoreManagerImpl extends AbstractService implements KeystoreMana
     @Autowired
     private DatabaseFacade dbf;
 
-    private KeystoreManager keystoreManager;
-
-    protected KeystoreVO self;
-
-    protected KeystoreInventory getInventory() {
-        return KeystoreInventory.valueOf(self);
-    }
-
     @Override
     @MessageSafe
     public void handleMessage(Message msg) {
         if (msg instanceof APIMessage) {
             handleApiMessage((APIMessage) msg);
         } else {
-            handleLocalMessage(msg);
-        }
-    }
-
-
-    private void handleLocalMessage(Message msg) {
-        if (msg instanceof CreateKeystoreMsg) {
-            handle((CreateKeystoreMsg) msg);
-        } else if (msg instanceof DeleteKeystoreMsg) {
-            handle((DeleteKeystoreMsg) msg);
-        } else if (msg instanceof QueryKeystoreMsg) {
-            handle((QueryKeystoreMsg) msg);
-        } else {
             bus.dealWithUnknownMessage(msg);
         }
     }
 
     private void handleApiMessage(APIMessage msg) {
-        if (msg instanceof APICreateKeystoreMsg) {
+        if (msg instanceof APICreateIfNotExistKeystoreMsg) {
+            handle((APICreateIfNotExistKeystoreMsg) msg);
+        } else if (msg instanceof APICreateKeystoreMsg) {
             handle((APICreateKeystoreMsg) msg);
         } else if (msg instanceof APIDeleteKeystoreMsg) {
             handle((APIDeleteKeystoreMsg) msg);
@@ -82,93 +73,36 @@ public class KeystoreManagerImpl extends AbstractService implements KeystoreMana
         }
     }
 
-    @Transactional
     private void handle(APICreateKeystoreMsg msg) {
         APICreateKeystoreReply reply = new APICreateKeystoreReply();
 
-        KeystoreVO vo = new KeystoreVO();
-        if (msg.getResourceUuid() != null) {
-            vo.setUuid(msg.getResourceUuid());
-        } else {
-            vo.setUuid(Platform.getUuid());
-        }
-        vo.setResourceUuid(msg.getResourceUuid());
-        vo.setResourceType(msg.getResourceType());
-        vo.setType(msg.getType());
-        vo.setContent(msg.getContent());
-        dbf.getEntityManager().persist(vo);
+        KeystoreInventory ksinv = new KeystoreInventory();
+        ksinv.setResourceUuid(msg.getResourceUuid());
+        ksinv.setResourceType(msg.getResourceType());
+        ksinv.setType(msg.getType());
+        ksinv.setContent(msg.getContent());
+        reply.setInventory(createOrUpdate(ksinv));
+
+        bus.reply(msg, reply);
+    }
+
+    private void handle(APICreateIfNotExistKeystoreMsg msg) {
+        APICreateKeystoreReply reply = new APICreateKeystoreReply();
+
+        KeystoreInventory ksinv = new KeystoreInventory();
+        ksinv.setResourceUuid(msg.getResourceUuid());
+        ksinv.setResourceType(msg.getResourceType());
+        ksinv.setType(msg.getType());
+        ksinv.setContent(msg.getContent());
+        reply.setInventory(createIfNotExist(ksinv));
 
         bus.reply(msg, reply);
     }
 
     private void handle(APIDeleteKeystoreMsg msg) {
         APIDeleteKeystoreEvent evt = new APIDeleteKeystoreEvent(msg.getId());
-        deleteKeystore(msg.getUuid());
+        delete(msg.getUuid());
         bus.publish(evt);
-    }
-
-    @Transactional
-    private void handle(CreateKeystoreMsg msg) {
-        CreateKeystoreReply reply = new CreateKeystoreReply();
-
-        KeystoreVO vo = new KeystoreVO();
-        if (msg.getResourceUuid() != null) {
-            vo.setUuid(msg.getResourceUuid());
-        } else {
-            vo.setUuid(Platform.getUuid());
-        }
-        vo.setResourceUuid(msg.getResourceUuid());
-        vo.setResourceType(msg.getResourceType());
-        vo.setType(msg.getType());
-        vo.setContent(msg.getContent());
-        dbf.getEntityManager().persist(vo);
-
-        bus.reply(msg, reply);
-    }
-
-    @Transactional
-    private void handle(QueryKeystoreMsg msg) {
-        QueryKeystoreReply reply = new QueryKeystoreReply();
-        KeystoreInventory kinv = new KeystoreInventory();
-        if (msg.getUuid() != null) {
-            self = dbf.findByUuid(msg.getUuid(), KeystoreVO.class);
-        } else {
-            String sql = "select uuid from KeystoreVO where resourceUuid = :resourceUuid " +
-                    " and resourceType = :resourceType and type = :keystoreType";
-            TypedQuery<String> q = dbf.getEntityManager().createQuery(sql, String.class);
-            q.setParameter("resourceUuid", msg.getResourceUuid());
-            q.setParameter("resourceType", msg.getResourceType());
-            q.setParameter("keystoreType", msg.getType());
-            String uuid = dbf.find(q);
-
-            if (uuid != null) {
-                self = dbf.findByUuid(uuid, KeystoreVO.class);
-            }
-        }
-
-        if (self == null) {
-            bus.reply(msg, reply);
-        } else {
-            kinv.setUuid(self.getUuid());
-            kinv.setResourceUuid(self.getResourceUuid());
-            kinv.setResourceType(self.getResourceType());
-            kinv.setType(self.getType());
-            kinv.setContent(self.getContent());
-            reply.setInventory(kinv);
-        }
-
-    }
-
-    private void handle(DeleteKeystoreMsg msg) {
-        final DeleteKeystoreReply reply = new DeleteKeystoreReply();
-        deleteKeystore(msg.getUuid());
-        bus.reply(msg, reply);
-    }
-
-    @Transactional
-    private void deleteKeystore(String uuid) {
-        self = dbf.findByUuid(uuid, KeystoreVO.class);
-        dbf.remove(self);
     }
 
     @Override
@@ -192,4 +126,77 @@ public class KeystoreManagerImpl extends AbstractService implements KeystoreMana
         logger.debug(String.format("Management node[uuid:%s] joins, start KeystoreManager...",
                 Platform.getManagementServerId()));
     }
+
+
+    @Transactional
+    public KeystoreInventory query(KeystoreInventory ksinv) {
+        String sql = "select ksvo from KeystoreVO ksvo where ksvo.resourceUuid = :resourceUuid " +
+                " and ksvo.resourceType = :resourceType and ksvo.type = :keystoreType";
+        TypedQuery<KeystoreVO> q = dbf.getEntityManager().createQuery(sql, KeystoreVO.class);
+        q.setParameter("resourceUuid", ksinv.getResourceUuid());
+        q.setParameter("resourceType", ksinv.getResourceType());
+        q.setParameter("keystoreType", ksinv.getType());
+        List<KeystoreVO> keystoreVOList = q.getResultList();
+        if (keystoreVOList.size() > 1) {
+            throw new CloudRuntimeException("the size of Keystore Query Result should not be larger than one.");
+        }
+        if (keystoreVOList.size() == 1) {
+            return KeystoreInventory.valueOf(q.getResultList().get(0));
+        } else {
+            return null;
+        }
+    }
+
+    @Transactional
+    @Override
+    public KeystoreInventory createIfNotExist(KeystoreInventory ksinv) {
+        KeystoreInventory ksinvR;
+        SimpleQuery<KeystoreVO> q = dbf.createQuery(KeystoreVO.class);
+        q.add(KeystoreVO_.resourceUuid, SimpleQuery.Op.EQ, ksinv.getResourceUuid());
+        q.add(KeystoreVO_.resourceType, SimpleQuery.Op.EQ, ksinv.getResourceType());
+        q.add(KeystoreVO_.type, SimpleQuery.Op.EQ, ksinv.getType());
+        ksinvR = KeystoreInventory.valueOf(q.find());
+
+        if (ksinvR == null) {
+            return createOrUpdate(ksinv);
+        } else {
+            return ksinvR;
+        }
+    }
+
+    @Transactional
+    private KeystoreVO create(KeystoreInventory ksinv) {
+        KeystoreVO vo = new KeystoreVO();
+        vo.setUuid(Platform.getUuid());
+        vo.setResourceUuid(ksinv.getResourceUuid());
+        vo.setResourceType(ksinv.getResourceType());
+        vo.setType(ksinv.getType());
+        vo.setContent(ksinv.getContent());
+        dbf.persistAndRefresh(vo);
+        return vo;
+    }
+
+    @Transactional
+    @Override
+    public KeystoreInventory createOrUpdate(KeystoreInventory ksinv) {
+        KeystoreVO voR = create(ksinv);
+        if (voR != null) {
+            return KeystoreInventory.valueOf(voR);
+        } else {
+            throw new CloudRuntimeException("failed to create or update keystore");
+        }
+    }
+
+    @Transactional
+    @Override
+    public void delete(String uuid) {
+        dbf.removeByPrimaryKey(uuid, KeystoreVO.class);
+    }
+
+    @Transactional
+    @Override
+    public void delete(KeystoreInventory ksinv) {
+    }
+
+
 }
