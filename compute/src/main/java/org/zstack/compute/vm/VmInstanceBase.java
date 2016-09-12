@@ -3679,6 +3679,10 @@ public class VmInstanceBase extends AbstractVmInstance {
 
         spec.setCurrentVmOperation(operation);
         selectBootOrder(spec);
+        String instanceOfferingOnliechange = VmSystemTags.INSTANCEOFFERING_ONLIECHANGE.getTokenByResourceUuid(self.getUuid(),VmSystemTags.INSTANCEOFFERING_ONLINECHANGE_TOKEN);
+        if(instanceOfferingOnliechange.equals("true")){
+            spec.setInstanceOfferingOnliechange(true);
+        }
         spec.setConsolePassword(VmSystemTags.CONSOLE_PASSWORD.getTokenByResourceUuid(self.getUuid(), VmSystemTags.CONSOLE_PASSWORD_TOKEN));
         return spec;
     }
