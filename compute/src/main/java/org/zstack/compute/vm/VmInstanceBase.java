@@ -2840,6 +2840,10 @@ public class VmInstanceBase extends AbstractVmInstance {
         });
 
         if (self.getState() == VmInstanceState.Stopped) {
+            String peningCapacityChange = VmSystemTags.PENDING_CAPACITY_CHANGE.getTag(self.getUuid());
+            if (peningCapacityChange != null) {
+                VmSystemTags.PENDING_CAPACITY_CHANGE.deleteInherentTag(self.getUuid());
+            }
             self.setInstanceOfferingUuid(iovo.getUuid());
             self.setCpuNum(iovo.getCpuNum());
             self.setCpuSpeed(iovo.getCpuSpeed());
@@ -2910,8 +2914,8 @@ public class VmInstanceBase extends AbstractVmInstance {
 
             evt.setInventory(getSelfInventory());
             bus.publish(evt);
-            return;
         }
+        return;
     }
 
 
