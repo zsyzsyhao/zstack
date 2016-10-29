@@ -266,6 +266,9 @@ public class VmInstanceBase extends AbstractVmInstance {
         return vmMgr.getDetachIsoWorkFlowChain(inv);
     }
 
+    protected FlowChain getSuspendVmWorkFlowChain(VmInstanceInventory inv){
+         return vmMgr.getSuspendWorkFlowChain(inv);
+    }
     protected VmInstanceVO changeVmStateInDb(VmInstanceStateEvent stateEvent) {
         VmInstanceState bs = self.getState();
         final VmInstanceState state = self.getState().nextState(stateEvent);
@@ -1998,6 +2001,8 @@ public class VmInstanceBase extends AbstractVmInstance {
             handle((APIDeleteVmSshKeyMsg) msg);
         } else if (msg instanceof APIGetCandidateIsoForAttachingVmMsg) {
             handle((APIGetCandidateIsoForAttachingVmMsg) msg);
+        }else if (msg instanceof APISuspendVmInstanceMsg) {
+            handle((APISuspendVmInstanceMsg) msg);
         } else {
             VmInstanceBaseExtensionFactory ext = vmMgr.getVmInstanceBaseExtensionFactory(msg);
             if (ext != null) {
@@ -4197,5 +4202,84 @@ public class VmInstanceBase extends AbstractVmInstance {
             evt.setInventory(sinv);
         }
         bus.publish(evt);
+    }
+
+    protected void suspendVm(final APISuspendVmInstanceMsg msg, final SyncTaskChain taskChain ){
+        suspendVm(msg, new Completion(taskChain) {
+            @Override
+            public void success() {
+                APISuspendVmInstanceEvent evt = new APISuspendVmInstanceEvent(msg.getId());
+                VmInstanceInventory inv = VmInstanceInventory.valueOf(self);
+                evt.setInventory(inv);
+                bus.publish(evt);
+                taskChain.next();
+            }
+
+            @Override
+            public void fail(ErrorCode errorCode) {
+                APISuspendVmInstanceEvent evt = new APISuspendVmInstanceEvent(msg.getId());
+                evt.setErrorCode(errf.instantiateErrorCode(VmErrors.SUSPEND_ERROR, errorCode));
+                bus.publish(evt);
+                taskChain.next();
+            }
+        });
+    }
+
+    protected void suspendVm(final Message msg, Completion completion){
+        refreshVO();
+        ErrorCode allowed = validateOperationByState(msg,self.getState(),null);
+        if(allowed != null) {
+            completion.fail(allowed);
+            return;
+        }
+        if (self.getState() == VmInstanceState.Suspended){
+            completion.success();
+            return;
+        }
+        VmInstanceInventory inv = VmInstanceInventory.valueOf(self);
+        final VmInstanceSpec spec = buildSpecFromInventory(inv,VmOperation.Suspend);
+        spec.setMessage(msg);
+        final VmInstanceState originState = self.getState();
+        changeVmStateInDb(VmInstanceStateEvent.suspending);
+
+        FlowChain chain = getSuspendVmWorkFlowChain(inv);
+        setFlowMarshaller(chain);
+
+        chain.setName(String.format("suspend-vm-%s",self.getUuid()));
+        chain.getData().put(VmInstanceConstant.Params.VmInstanceSpec.toString(),spec);
+        chain.done(new FlowDoneHandler(completion) {
+            @Override
+            public void handle(Map Data) {
+                self = changeVmStateInDb(VmInstanceStateEvent.suspended);
+                completion.success();
+            }
+        }).error(new FlowErrorHandler(completion) {
+            @Override
+            public void handle(final ErrorCode errCode, Map data) {
+                self.setState(originState);
+                self = dbf.updateAndRefresh(self);
+                completion.fail(errCode);
+            }
+        }).start();
+    }
+
+    protected void handle(final APISuspendVmInstanceMsg msg){
+        thdf.chainSubmit(new ChainTask(msg) {
+
+            @Override
+            public String getSyncSignature() {
+                return syncThreadName;
+            }
+
+            @Override
+            public void run(SyncTaskChain chain) {
+                suspendVm(msg,chain);
+            }
+
+            @Override
+            public String getName() {
+                return String.format("suspend-vm-%s",msg.getVmInstanceUuid());
+            }
+        });
     }
 }

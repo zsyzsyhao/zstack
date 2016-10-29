@@ -115,6 +115,7 @@ public class VmInstanceManagerImpl extends AbstractService implements
     private List<String> detachIsoWorkFlowElements;
     private List<String> attachVolumeWorkFlowElements;
     private List<String> expungeVmWorkFlowElements;
+    private List<String> suspendVmWorkFlowElements;
     private FlowChainBuilder createVmFlowBuilder;
     private FlowChainBuilder stopVmFlowBuilder;
     private FlowChainBuilder rebootVmFlowBuilder;
@@ -125,6 +126,7 @@ public class VmInstanceManagerImpl extends AbstractService implements
     private FlowChainBuilder attachIsoFlowBuilder;
     private FlowChainBuilder detachIsoFlowBuilder;
     private FlowChainBuilder expungeVmFlowBuilder;
+    private FlowChainBuilder suspendVmFlowBuilder;
     private static final Set<Class> allowedMessageAfterSoftDeletion = new HashSet<>();
     private Future<Void> expungeVmTask;
     private Map<Class, VmInstanceBaseExtensionFactory> vmInstanceBaseExtensionFactories = new HashMap<>();
@@ -774,6 +776,7 @@ public class VmInstanceManagerImpl extends AbstractService implements
         attachIsoFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(attachIsoWorkFlowElements).construct();
         detachIsoFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(detachIsoWorkFlowElements).construct();
         expungeVmFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(expungeVmWorkFlowElements).construct();
+        suspendVmFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(suspendVmWorkFlowElements).construct();
     }
 
     private void populateExtensions() {
@@ -1094,6 +1097,10 @@ public class VmInstanceManagerImpl extends AbstractService implements
         return expungeVmFlowBuilder.build();
     }
 
+    public FlowChain getSuspendWorkFlowChain(VmInstanceInventory inv){
+        return suspendVmFlowBuilder.build();
+    }
+
     public void setCreateVmWorkFlowElements(List<String> createVmWorkFlowElements) {
         this.createVmWorkFlowElements = createVmWorkFlowElements;
     }
@@ -1132,6 +1139,10 @@ public class VmInstanceManagerImpl extends AbstractService implements
 
     public void setExpungeVmWorkFlowElements(List<String> expungeVmWorkFlowElements) {
         this.expungeVmWorkFlowElements = expungeVmWorkFlowElements;
+    }
+
+    public void setSuspendVmWorkFlowElements(List<String> suspendVmWorkFlowElements){
+        this.suspendVmWorkFlowElements = suspendVmWorkFlowElements;
     }
 
     @Override

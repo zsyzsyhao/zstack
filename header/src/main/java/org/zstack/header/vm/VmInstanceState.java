@@ -20,6 +20,8 @@ public enum VmInstanceState {
     Destroyed(VmInstanceStateEvent.destroyed),
     Migrating(VmInstanceStateEvent.migrating),
     Expunging(VmInstanceStateEvent.expunging),
+    Suspending(VmInstanceStateEvent.suspending),
+    Suspended(VmInstanceStateEvent.suspended),
     Error(null),
     Unknown(VmInstanceStateEvent.unknown);
 
@@ -31,6 +33,7 @@ public enum VmInstanceState {
         intermediateStates.add(Rebooting);
         intermediateStates.add(Destroying);
         intermediateStates.add(Migrating);
+        intermediateStates.add(Suspending);
 
         Created.transactions(
                 new Transaction(VmInstanceStateEvent.starting, VmInstanceState.Starting),
