@@ -116,6 +116,7 @@ public class VmInstanceManagerImpl extends AbstractService implements
     private List<String> attachVolumeWorkFlowElements;
     private List<String> expungeVmWorkFlowElements;
     private List<String> suspendVmWorkFlowElements;
+    private List<String> resumeVmWorkFlowElements;
     private FlowChainBuilder createVmFlowBuilder;
     private FlowChainBuilder stopVmFlowBuilder;
     private FlowChainBuilder rebootVmFlowBuilder;
@@ -127,6 +128,7 @@ public class VmInstanceManagerImpl extends AbstractService implements
     private FlowChainBuilder detachIsoFlowBuilder;
     private FlowChainBuilder expungeVmFlowBuilder;
     private FlowChainBuilder suspendVmFlowBuilder;
+    private FlowChainBuilder resumeVmFlowBuilder;
     private static final Set<Class> allowedMessageAfterSoftDeletion = new HashSet<>();
     private Future<Void> expungeVmTask;
     private Map<Class, VmInstanceBaseExtensionFactory> vmInstanceBaseExtensionFactories = new HashMap<>();
@@ -777,6 +779,7 @@ public class VmInstanceManagerImpl extends AbstractService implements
         detachIsoFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(detachIsoWorkFlowElements).construct();
         expungeVmFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(expungeVmWorkFlowElements).construct();
         suspendVmFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(suspendVmWorkFlowElements).construct();
+        resumeVmFlowBuilder = FlowChainBuilder.newBuilder().setFlowClassNames(resumeVmWorkFlowElements).construct();
     }
 
     private void populateExtensions() {
@@ -1099,6 +1102,10 @@ public class VmInstanceManagerImpl extends AbstractService implements
 
     public FlowChain getSuspendWorkFlowChain(VmInstanceInventory inv){
         return suspendVmFlowBuilder.build();
+    }
+
+    public FlowChain getResumeVmWorkFlowChain(VmInstanceInventory inv){
+        return resumeVmFlowBuilder.build();
     }
 
     public void setCreateVmWorkFlowElements(List<String> createVmWorkFlowElements) {

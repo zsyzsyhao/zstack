@@ -1022,6 +1022,28 @@ public class KVMAgentCommands {
 
     }
 
+    public static class ResumeVmCmd extends AgentCommand{
+        private String uuid;
+        private long timeout;
+
+        public String getUuid(){
+            return uuid;
+        }
+        public void setUuid(String uuid){
+            this.uuid = uuid;
+        }
+        public long getTimeout(){
+            return timeout;
+        }
+        public void setTimeout(long timeout){
+            this.timeout = timeout;
+        }
+    }
+
+    public static class ResumeVmResponse extends AgentResponse{
+
+    }
+
     public static class RebootVmCmd extends AgentCommand {
         private String uuid;
         private long timeout;

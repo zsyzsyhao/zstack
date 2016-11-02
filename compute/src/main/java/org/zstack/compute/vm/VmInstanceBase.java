@@ -269,6 +269,9 @@ public class VmInstanceBase extends AbstractVmInstance {
     protected FlowChain getSuspendVmWorkFlowChain(VmInstanceInventory inv){
          return vmMgr.getSuspendWorkFlowChain(inv);
     }
+    protected FlowChain getResumeVmWorkFlowChain(VmInstanceInventory inv){
+        return vmMgr.getResumeVmWorkFlowChain(inv);
+    }
     protected VmInstanceVO changeVmStateInDb(VmInstanceStateEvent stateEvent) {
         VmInstanceState bs = self.getState();
         final VmInstanceState state = self.getState().nextState(stateEvent);
@@ -4282,4 +4285,80 @@ public class VmInstanceBase extends AbstractVmInstance {
             }
         });
     }
+
+    protected void resumeVm(final APIResumeVmInstanceMsg msg, final SyncTaskChain taskChain ){
+        resumeVm(msg, new Completion(taskChain) {
+            @Override
+            public void success() {
+                APIResumeVmInstanceEvent evt = new APIResumeVmInstanceEvent(msg.getId());
+                VmInstanceInventory inv = VmInstanceInventory.valueOf(self);
+                evt.setInventory(inv);
+                bus.publish(evt);
+                taskChain.next();
+            }
+
+            @Override
+            public void fail(ErrorCode errorCode) {
+                APIResumeVmInstanceEvent evt = new APIResumeVmInstanceEvent(msg.getId());
+                evt.setErrorCode(errf.instantiateErrorCode(VmErrors.RESUME_ERROR, errorCode));
+                bus.publish(evt);
+                taskChain.next();
+            }
+        });
+    }
+
+    protected void resumeVm(final Message msg, Completion completion){
+        refreshVO();
+        ErrorCode allowed = validateOperationByState(msg,self.getState(),null);
+        if(allowed != null) {
+            completion.fail(allowed);
+            return;
+        }
+        VmInstanceInventory inv = VmInstanceInventory.valueOf(self);
+        final VmInstanceSpec spec = buildSpecFromInventory(inv,VmOperation.Suspend);
+        spec.setMessage(msg);
+        final VmInstanceState originState = self.getState();
+        changeVmStateInDb(VmInstanceStateEvent.suspending);
+
+        FlowChain chain = getResumeVmWorkFlowChain(inv);
+        setFlowMarshaller(chain);
+
+        chain.setName(String.format("resume-vm-%s",self.getUuid()));
+        chain.getData().put(VmInstanceConstant.Params.VmInstanceSpec.toString(),spec);
+        chain.done(new FlowDoneHandler(completion) {
+            @Override
+            public void handle(Map Data) {
+                self = changeVmStateInDb(VmInstanceStateEvent.running);
+                completion.success();
+            }
+        }).error(new FlowErrorHandler(completion) {
+            @Override
+            public void handle(final ErrorCode errCode, Map data) {
+                self.setState(originState);
+                self = dbf.updateAndRefresh(self);
+                completion.fail(errCode);
+            }
+        }).start();
+    }
+
+    protected void handle(final APIResumeVmInstanceMsg msg){
+        thdf.chainSubmit(new ChainTask(msg) {
+
+            @Override
+            public String getSyncSignature() {
+                return syncThreadName;
+            }
+
+            @Override
+            public void run(SyncTaskChain chain) {
+                resumeVm(msg,chain);
+            }
+
+            @Override
+            public String getName() {
+                return String.format("resume-vm-%s",msg.getVmInstanceUuid());
+            }
+        });
+    }
 }
+

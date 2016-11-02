@@ -22,6 +22,8 @@ public enum VmInstanceState {
     Expunging(VmInstanceStateEvent.expunging),
     Suspending(VmInstanceStateEvent.suspending),
     Suspended(VmInstanceStateEvent.suspended),
+    Resuming(VmInstanceStateEvent.resuming),
+    Resumed(VmInstanceStateEvent.resumed),
     Error(null),
     Unknown(VmInstanceStateEvent.unknown);
 

@@ -15,7 +15,8 @@ public enum VmErrors {
     ALLOCATE_MAC_ERROR(1009),
     NOT_IN_CORRECT_STATE(1010),
     CHANGE_VM_PASSWORD_ERROR(1011),
-    SUSPEND_ERROR(1012);
+    SUSPEND_ERROR(1012),
+    RESUME_ERROR(1013);
 
 
     private String code;

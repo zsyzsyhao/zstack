@@ -63,5 +63,9 @@
         <id>1012</id>
         <description>Unable to suspend a vm</description>
     </code>
+    <code>
+        <id>1013</id>
+        <description>Unable to resume a vm</description>
+    </code>
 </error>
 
