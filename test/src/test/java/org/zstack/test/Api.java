@@ -1604,7 +1604,7 @@ public class Api implements CloudBusEventListener {
     }
 
     public VmAccountPerference changeVmPassword(VmAccountPerference account)
-            throws ApiSenderException{
+            throws ApiSenderException {
         APIChangeVmPasswordMsg msg = new APIChangeVmPasswordMsg();
         msg.setSession(adminSession);
         msg.setVmInstanceUuid(account.getVmUuid());
@@ -1613,7 +1613,8 @@ public class Api implements CloudBusEventListener {
         ApiSender sender = new ApiSender();
         sender.setTimeout(timeout);
         APIChangeVmPasswordEvent evt = sender.send(msg, APIChangeVmPasswordEvent.class);
-        return new VmAccountPerference(evt.getVmUuid(),evt.getUserAccount(),evt.getAccountPassword());
+        return new VmAccountPerference(evt.getVmUuid(), evt.getUserAccount(), evt.getAccountPassword());
+    }
     public VmInstanceInventory suspendVmInstance(String uuid) throws ApiSenderException {
         return suspendVmInstance(uuid, null);
     }
@@ -1640,7 +1641,6 @@ public class Api implements CloudBusEventListener {
         sender.setTimeout(timeout);
         APIResumeVmInstanceEvent evt = sender.send(msg, APIStartVmInstanceEvent.class);
         return evt.getInventory();
->>>>>>> add unit test for suspending and resuming vm
     }
 
     public VmInstanceInventory rebootVmInstance(String uuid) throws ApiSenderException {

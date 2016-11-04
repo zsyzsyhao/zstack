@@ -10,10 +10,6 @@ public interface KVMConstant {
     @PythonClass
     String KVM_HYPERVISOR_TYPE = "KVM";
 
-
-
-
-
     String KVM_CONNECT_PATH = "/host/connect";
     String KVM_PING_PATH = "/host/ping";
     String KVM_ECHO_PATH = "/host/echo";
