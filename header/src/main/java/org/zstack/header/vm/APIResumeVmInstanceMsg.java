@@ -10,14 +10,18 @@ import org.zstack.header.message.APIParam;
 @Action(category = VmInstanceConstant.ACTION_CATEGORY)
 public class APIResumeVmInstanceMsg extends APIMessage implements VmInstanceMessage{
     @APIParam
-    private String vmInstanceUuid;
+    private String uuid;
 
-    @Override
-    public String getVmInstanceUuid(){
-        return vmInstanceUuid;
+    public String getUuid() {
+        return uuid;
     }
 
-    public String setVmInstanceUuid(String vmInstanceUuid){
-        return this.vmInstanceUuid = vmInstanceUuid;
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    @Override
+    public String getVmInstanceUuid() {
+        return getUuid();
     }
 }

@@ -271,11 +271,19 @@ public class KVMHost extends HostBase implements Host {
             handle((VmDirectlyDestroyOnHypervisorMsg) msg);
         } else if (msg instanceof OnlineChangeVmCpuMemoryMsg) {
             handle((OnlineChangeVmCpuMemoryMsg) msg);
+<<<<<<< HEAD
         } else if (msg instanceof ChangeVmPasswordMsg) {
             handle((ChangeVmPasswordMsg) msg);
         } else if (msg instanceof SetRootPasswordMsg) {
             handle((SetRootPasswordMsg) msg);
         } else {
+=======
+        } else if (msg instanceof SuspendVmOnHypervisorMsg) {
+        handle((SuspendVmOnHypervisorMsg) msg);
+        } else if (msg instanceof ResumeVmOnHypervisorMsg) {
+        handle((ResumeVmOnHypervisorMsg) msg);
+        }else {
+>>>>>>> add unit test for suspending and resuming vm
             super.handleLocalMessage(msg);
         }
     }
@@ -2086,9 +2094,9 @@ public class KVMHost extends HostBase implements Host {
                             vminv.getName(), self.getUuid(), self.getManagementIp(), ret.getError());
                     reply.setError(errf.instantiateErrorCode(HostErrors.FAILED_TO_STOP_VM_ON_HYPERVISOR, err));
                     logger.warn(err);
-                    bus.reply(msg,reply);
-                    completion.done();
                 }
+                bus.reply(msg,reply);
+                completion.done();
             }
 
             @Override
@@ -2099,7 +2107,7 @@ public class KVMHost extends HostBase implements Host {
 
     }
 
-    private void handel(final ResumeVmOnHypervisorMsg msg){
+    private void handle(final ResumeVmOnHypervisorMsg msg){
         thdf.chainSubmit(new ChainTask(msg) {
             @Override
             public String getSyncSignature() {
@@ -2150,9 +2158,9 @@ public class KVMHost extends HostBase implements Host {
                             vminv.getName(), self.getUuid(), self.getManagementIp(), ret.getError());
                     reply.setError(errf.instantiateErrorCode(HostErrors.FAILED_TO_STOP_VM_ON_HYPERVISOR, err));
                     logger.warn(err);
-                    bus.reply(msg,reply);
-                    completion.done();
                 }
+                bus.reply(msg,reply);
+                completion.done();
             }
 
             @Override
@@ -2163,7 +2171,7 @@ public class KVMHost extends HostBase implements Host {
 
     }
 
-    private void handel(final SuspendVmOnHypervisorMsg msg){
+    private void handle(final SuspendVmOnHypervisorMsg msg){
         thdf.chainSubmit(new ChainTask(msg) {
             @Override
             public String getSyncSignature() {

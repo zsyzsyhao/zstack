@@ -1614,6 +1614,33 @@ public class Api implements CloudBusEventListener {
         sender.setTimeout(timeout);
         APIChangeVmPasswordEvent evt = sender.send(msg, APIChangeVmPasswordEvent.class);
         return new VmAccountPerference(evt.getVmUuid(),evt.getUserAccount(),evt.getAccountPassword());
+    public VmInstanceInventory suspendVmInstance(String uuid) throws ApiSenderException {
+        return suspendVmInstance(uuid, null);
+    }
+
+    public VmInstanceInventory suspendVmInstance(String uuid, SessionInventory session) throws ApiSenderException {
+        APISuspendVmInstanceMsg msg = new APISuspendVmInstanceMsg();
+        msg.setSession(session == null ? adminSession : session);
+        msg.setUuid(uuid);
+        ApiSender sender = new ApiSender();
+        sender.setTimeout(timeout);
+        APISuspendVmInstanceEvent evt = sender.send(msg, APISuspendVmInstanceEvent.class);
+        return evt.getInventory();
+    }
+
+    public VmInstanceInventory resumeVmInstance(String uuid) throws ApiSenderException {
+        return resumeVmInstance(uuid, null);
+    }
+
+    public VmInstanceInventory resumeVmInstance(String uuid, SessionInventory session) throws ApiSenderException {
+        APIResumeVmInstanceMsg msg = new APIResumeVmInstanceMsg();
+        msg.setSession(session == null ? adminSession : session);
+        msg.setUuid(uuid);
+        ApiSender sender = new ApiSender();
+        sender.setTimeout(timeout);
+        APIResumeVmInstanceEvent evt = sender.send(msg, APIStartVmInstanceEvent.class);
+        return evt.getInventory();
+>>>>>>> add unit test for suspending and resuming vm
     }
 
     public VmInstanceInventory rebootVmInstance(String uuid) throws ApiSenderException {

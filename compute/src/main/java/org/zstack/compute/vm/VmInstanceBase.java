@@ -2006,6 +2006,8 @@ public class VmInstanceBase extends AbstractVmInstance {
             handle((APIGetCandidateIsoForAttachingVmMsg) msg);
         }else if (msg instanceof APISuspendVmInstanceMsg) {
             handle((APISuspendVmInstanceMsg) msg);
+        } else if (msg instanceof APIResumeVmInstanceMsg) {
+            handle((APIResumeVmInstanceMsg) msg);
         } else {
             VmInstanceBaseExtensionFactory ext = vmMgr.getVmInstanceBaseExtensionFactory(msg);
             if (ext != null) {
@@ -4318,8 +4320,7 @@ public class VmInstanceBase extends AbstractVmInstance {
         final VmInstanceSpec spec = buildSpecFromInventory(inv,VmOperation.Suspend);
         spec.setMessage(msg);
         final VmInstanceState originState = self.getState();
-        changeVmStateInDb(VmInstanceStateEvent.suspending);
-
+        changeVmStateInDb(VmInstanceStateEvent.resuming);
         FlowChain chain = getResumeVmWorkFlowChain(inv);
         setFlowMarshaller(chain);
 

@@ -20,5 +20,4 @@ public enum VmInstanceStateEvent {
     running,
     stopped,
     suspended,
-    resumed,
 }

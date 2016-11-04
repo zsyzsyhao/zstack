@@ -1152,6 +1152,10 @@ public class VmInstanceManagerImpl extends AbstractService implements
         this.suspendVmWorkFlowElements = suspendVmWorkFlowElements;
     }
 
+    public void setResumeVmWorkFlowElements(List<String> resumeVmWorkFlowElements){
+        this.resumeVmWorkFlowElements = resumeVmWorkFlowElements;
+    }
+
     @Override
     public List<Quota> reportQuota() {
         QuotaOperator checker = new QuotaOperator() {
