@@ -88,19 +88,22 @@ public enum VmInstanceState {
         );
         Suspended.transactions(
                 new Transaction(VmInstanceStateEvent.resuming, VmInstanceState.Resuming),
-                new Transaction(VmInstanceStateEvent.stopped, VmInstanceState.Stopped),
+               // new Transaction(VmInstanceStateEvent.stopped, VmInstanceState.Stopped),
+                new Transaction(VmInstanceStateEvent.stopping, VmInstanceState.Stopping),
                 new Transaction(VmInstanceStateEvent.running, VmInstanceState.Running),
-                new Transaction(VmInstanceStateEvent.suspending, VmInstanceState.Suspending),
                 new Transaction(VmInstanceStateEvent.destroying, VmInstanceState.Destroying),
                 new Transaction(VmInstanceStateEvent.unknown, VmInstanceState.Unknown)
         );
         Suspending.transactions(
                 new Transaction(VmInstanceStateEvent.suspended, VmInstanceState.Suspended),
+                new Transaction(VmInstanceStateEvent.destroying, VmInstanceState.Destroying),
+                new Transaction(VmInstanceStateEvent.running, VmInstanceState.Running),
                 new Transaction(VmInstanceStateEvent.unknown, VmInstanceState.Unknown)
         );
         Resuming.transactions(
                 new Transaction(VmInstanceStateEvent.running, VmInstanceState.Running),
                 new Transaction(VmInstanceStateEvent.destroying, VmInstanceState.Destroying),
+                new Transaction(VmInstanceStateEvent.suspended,VmInstanceState.Suspended),
                 new Transaction(VmInstanceStateEvent.unknown, VmInstanceState.Unknown)
         );
         Unknown.transactions(
