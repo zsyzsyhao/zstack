@@ -163,6 +163,8 @@ public class VyosVmFactory extends VirtualRouterApplianceVmFactory implements Co
         vo.getNetworkServiceTypes().add(NetworkServiceType.PortForwarding.toString());
         vo.getNetworkServiceTypes().add(EipConstant.EIP_NETWORK_SERVICE_TYPE);
         vo.getNetworkServiceTypes().add(LoadBalancerConstants.LB_NETWORK_SERVICE_TYPE_STRING);
+        //hard code for the premium plugin
+        vo.getNetworkServiceTypes().add("IPsec");
         vo.setType(VyosConstants.VYOS_ROUTER_PROVIDER_TYPE);
         providerVO = dbf.persistAndRefresh(vo);
     }
