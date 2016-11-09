@@ -827,8 +827,8 @@ public class VirtualRouterManagerImpl extends AbstractService implements Virtual
     @Override
     public FlowChain getReconnectFlowChain() {
         FlowChain chain = reconnectFlowsBuilder.build();
-        for (VirtualRouterPostDestroyFlowExtensionPoint ext : postDestroyFlowExtensionPoints) {
-            chain.then(ext.virtualRouterPostDestroyFlow());
+        for (VirtualRouterPostReconnectFlowExtensionPoint ext : postReconnectFlowExtensionPoints) {
+            chain.then(ext.virtualRouterPostReconnectFlow());
         }
         return chain;
     }
