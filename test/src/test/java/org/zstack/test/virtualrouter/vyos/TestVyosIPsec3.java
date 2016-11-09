@@ -8,14 +8,13 @@ import org.zstack.core.componentloader.ComponentLoader;
 import org.zstack.core.db.DatabaseFacade;
 import org.zstack.header.identity.SessionInventory;
 import org.zstack.header.network.l3.L3NetworkInventory;
-import org.zstack.header.vm.VmInstanceInventory;
 import org.zstack.ipsec.IPsecConnectionInventory;
-import org.zstack.ipsec.IPsecConnectionVO;
 import org.zstack.ipsec.vyos.VyosIPsecBackend.CreateIPsecConnectionCmd;
 import org.zstack.ipsec.vyos.VyosIPsecBackend.IPsecInfo;
 import org.zstack.ipsec.vyos.VyosIPsecSimulatorConfig;
 import org.zstack.network.service.vip.VipInventory;
 import org.zstack.network.service.vip.VipVO;
+import org.zstack.network.service.virtualrouter.VirtualRouterVmVO;
 import org.zstack.simulator.appliancevm.ApplianceVmSimulatorConfig;
 import org.zstack.simulator.virtualrouter.VirtualRouterSimulatorConfig;
 import org.zstack.test.Api;
@@ -30,9 +29,9 @@ import java.util.List;
 import static java.util.Arrays.asList;
 
 /**
- *  test create ipsec connection
+ *  test sync ipsec connection
  */
-public class TestVyosIPsec1 {
+public class TestVyosIPsec3 {
     Deployer deployer;
     Api api;
     ComponentLoader loader;
@@ -144,7 +143,6 @@ public class TestVyosIPsec1 {
     public void test() throws ApiSenderException {
         L3NetworkInventory publicNw = deployer.l3Networks.get("PublicNetwork");
         L3NetworkInventory guestL3 = deployer.l3Networks.get("GuestNetwork");
-        VmInstanceInventory vm = deployer.vms.get("TestVm");
         VipInventory vip = api.acquireIp(publicNw.getUuid());
 
         IPsecConnectionInventory inv = new IPsecConnectionInventory();
@@ -168,11 +166,26 @@ public class TestVyosIPsec1 {
         IPsecConnectionInventory ipsec = api.createIPsecConnection(inv, peerCidrs, null);
         compare(inv, ipsec, false);
 
-        IPsecConnectionVO c = dbf.findByUuid(ipsec.getUuid(), IPsecConnectionVO.class);
-        compare(ipsec, IPsecConnectionInventory.valueOf(c), true);
-
+        iconfig.createIPsecConnectionCmdList.clear();
+        VirtualRouterVmVO vr = dbf.listAll(VirtualRouterVmVO.class).get(0);
+        api.stopVmInstance(vr.getUuid());
+        api.startVmInstance(vr.getUuid());
         Assert.assertEquals(1, iconfig.createIPsecConnectionCmdList.size());
         CreateIPsecConnectionCmd cmd = iconfig.createIPsecConnectionCmdList.get(0);
+        Assert.assertEquals(1, cmd.infos.size());
+        compare(ipsec, cmd.infos.get(0));
+
+        iconfig.createIPsecConnectionCmdList.clear();
+        api.rebootVmInstance(vr.getUuid());
+        Assert.assertEquals(1, iconfig.createIPsecConnectionCmdList.size());
+        cmd = iconfig.createIPsecConnectionCmdList.get(0);
+        Assert.assertEquals(1, cmd.infos.size());
+        compare(ipsec, cmd.infos.get(0));
+
+        iconfig.createIPsecConnectionCmdList.clear();
+        api.reconnectVirtualRouter(vr.getUuid());
+        Assert.assertEquals(1, iconfig.createIPsecConnectionCmdList.size());
+        cmd = iconfig.createIPsecConnectionCmdList.get(0);
         Assert.assertEquals(1, cmd.infos.size());
         compare(ipsec, cmd.infos.get(0));
     }
