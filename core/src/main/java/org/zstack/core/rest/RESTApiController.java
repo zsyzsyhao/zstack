@@ -34,11 +34,12 @@ public class RESTApiController {
     public void queryResult(@PathVariable String uuid, HttpServletResponse rsp) throws IOException {
         try {
             RestAPIResponse apiRsp = restApi.getResult(uuid);
+
             if (apiRsp == null) {
                 rsp.sendError(HttpStatus.SC_NOT_FOUND, String.format("No api result[uuid:%s] found", uuid));
                 return;
             }
-
+            rsp.setCharacterEncoding("utf-8");
             PrintWriter writer = rsp.getWriter();
             String res = JSONObjectUtil.toJsonString(apiRsp);
             rsp.setStatus(HttpStatus.SC_OK);
