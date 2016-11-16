@@ -73,6 +73,7 @@ public class RESTApiController {
         try {
             String ret = handleByMessageType(entity.getBody());
             response.setStatus(HttpStatus.SC_OK);
+            response.setCharacterEncoding("UTF-8");
             PrintWriter writer = response.getWriter();
             writer.write(ret);
         } catch (Throwable t) {
