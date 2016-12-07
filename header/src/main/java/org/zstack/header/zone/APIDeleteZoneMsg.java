@@ -1,7 +1,9 @@
 package org.zstack.header.zone;
 
+import org.springframework.http.HttpMethod;
 import org.zstack.header.message.APIDeleteMessage;
 import org.zstack.header.message.APIParam;
+import org.zstack.header.rest.Rest;
 
 /**
  * @api delete a zone. All descendant resources, for example cluster/host/vm, are deleted in
@@ -30,6 +32,10 @@ import org.zstack.header.message.APIParam;
  * @result see :ref:`APIDeleteZoneEvent`
  * @since 0.1.0
  */
+@Rest(
+        path = "/zones/{uuid}",
+        method = HttpMethod.DELETE
+)
 public class APIDeleteZoneMsg extends APIDeleteMessage implements ZoneMessage {
     /**
      * @desc zone uuid

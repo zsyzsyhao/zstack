@@ -2,10 +2,14 @@ package org.zstack.header.zone;
 
 import org.zstack.header.message.APIMessage;
 import org.zstack.header.message.APIParam;
+import org.zstack.header.rest.Rest;
 
 /**
  * Created by frank on 6/14/2015.
  */
+@Rest(
+        path = "/zones/{uuid}"
+)
 public class APIUpdateZoneMsg extends APIMessage implements ZoneMessage {
     @APIParam(maxLength = 255, required = false)
     private String name;
