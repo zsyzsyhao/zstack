@@ -8,7 +8,9 @@ import org.zstack.header.rest.Rest;
  * Created by frank on 6/14/2015.
  */
 @Rest(
-        path = "/zones/{uuid}"
+        path = "/zones/{uuid}/actions",
+        actionName = "update",
+        parameterName = "update"
 )
 public class APIUpdateZoneMsg extends APIMessage implements ZoneMessage {
     @APIParam(maxLength = 255, required = false)

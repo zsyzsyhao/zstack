@@ -1,5 +1,6 @@
 package com.zstack.utils.test;
 
+import junit.framework.Assert;
 import org.junit.Test;
 import org.zstack.utils.gson.JSONObjectUtil;
 
@@ -27,5 +28,8 @@ public class TestGson {
         a.bs.add(b);
         
         System.out.println(JSONObjectUtil.toJsonString(a));
+
+        b = JSONObjectUtil.toObject("{\"address\": null }", B.class);
+        Assert.assertNull(b.address);
     }
 }

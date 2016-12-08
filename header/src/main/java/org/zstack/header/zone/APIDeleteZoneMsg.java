@@ -34,7 +34,8 @@ import org.zstack.header.rest.Rest;
  */
 @Rest(
         path = "/zones/{uuid}",
-        method = HttpMethod.DELETE
+        method = HttpMethod.DELETE,
+        parameterName = "zone"
 )
 public class APIDeleteZoneMsg extends APIDeleteMessage implements ZoneMessage {
     /**

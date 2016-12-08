@@ -39,8 +39,9 @@ import org.zstack.header.rest.Rest;
  * @since 0.1.0
  */
 @Rest(
-        path = "/zones/{uuid}/action",
-        actionName = "changeState"
+        path = "/zones/{uuid}/actions",
+        actionName = "changeState",
+        parameterName = "changeState"
 )
 public class APIChangeZoneStateMsg extends APIMessage implements ZoneMessage {
     /**

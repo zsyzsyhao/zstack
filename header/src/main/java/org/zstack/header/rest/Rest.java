@@ -9,4 +9,8 @@ public @interface Rest {
     String path();
     HttpMethod method() default HttpMethod.PUT;
     String actionName() default "";
+    String parameterName();
+    String[] requestMappingFields() default {};
+    String responseMappingAllTo() default "";
+    String[] responseMappingFields() default {};
 }
