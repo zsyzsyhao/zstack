@@ -7,17 +7,18 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.zstack.core.Platform;
 import org.zstack.core.cloudbus.CloudBus;
 import org.zstack.core.cloudbus.CloudBusCallBack;
+import org.zstack.core.cloudbus.CloudBusEventListener;
 import org.zstack.header.Component;
 import org.zstack.header.exception.CloudRuntimeException;
 import org.zstack.header.identity.SessionInventory;
 import org.zstack.header.identity.SuppressCredentialCheck;
 import org.zstack.header.message.*;
+import org.zstack.header.rest.RESTFacade;
 import org.zstack.header.rest.Rest;
-import org.zstack.utils.DebugUtils;
-import org.zstack.utils.ExceptionDSL;
 import org.zstack.utils.Utils;
 import org.zstack.utils.gson.JSONObjectUtil;
 import org.zstack.utils.logging.CLogger;
@@ -25,20 +26,30 @@ import org.zstack.utils.logging.CLogger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
  * Created by xing5 on 2016/12/7.
  */
-public class RestServer implements Component {
+public class RestServer implements Component, CloudBusEventListener {
     private static final CLogger logger = Utils.getLogger(RestServer.class);
 
     @Autowired
     private CloudBus bus;
     @Autowired
     private AsyncRestApiStore asyncStore;
+    @Autowired
+    private RESTFacade restf;
+
+    @Override
+    public boolean handleEvent(Event e) {
+        if (e instanceof APIEvent) {
+            asyncStore.complete((APIEvent) e);
+        }
+
+        return false;
+    }
 
     class Api {
         Class apiClass;
@@ -46,7 +57,7 @@ public class RestServer implements Component {
         Map<String, String> requestMappingFields;
         Map<String, String> responseMappingFields = new HashMap<>();
 
-        public Api(Class clz, Rest at) {
+        Api(Class clz, Rest at) {
             apiClass = clz;
             annotation = at;
 
@@ -93,6 +104,15 @@ public class RestServer implements Component {
         public RestException(int statusCode, String error) {
             this.statusCode = statusCode;
             this.error = error;
+        }
+    }
+
+    void init() throws IllegalAccessException, InstantiationException {
+        Reflections reflections = Platform.getReflections();
+        Set<Class<? extends APIEvent>> evtClasses = reflections.getSubTypesOf(APIEvent.class);
+
+        for (Class evtClass : evtClasses) {
+            bus.subscribeEvent(this, (APIEvent)evtClass.newInstance());
         }
     }
 
@@ -208,7 +228,16 @@ public class RestServer implements Component {
             PropertyUtils.setProperty(msg, mappingKey == null ? key : mappingKey, e.getValue());
         }
 
-        handleByMessage(msg, api, rsp);
+        try {
+            handleByMessage(msg, api, rsp);
+        } catch (Throwable t) {
+
+            try {
+                rsp.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), t.getMessage());
+            } catch (IOException e) {
+                logger.warn("unhandled IO error", e);
+            }
+        }
     }
 
     private void writeReplyResponse(MessageReply reply, Api api, HttpServletResponse rsp) {
@@ -248,7 +277,7 @@ public class RestServer implements Component {
         }
     }
 
-    private void handleByMessage(APIMessage msg, Api api, HttpServletResponse rsp) {
+    private void handleByMessage(APIMessage msg, Api api, HttpServletResponse rsp) throws IOException {
         if (msg instanceof APISyncCallMessage) {
             bus.send(msg, new CloudBusCallBack() {
                 @Override
@@ -256,13 +285,20 @@ public class RestServer implements Component {
                     writeReplyResponse(reply, api, rsp);
                 }
             });
-
         } else {
-            String link = asyncStore.save(msg);
+            String apiUuid = asyncStore.save(msg);
+            UriComponentsBuilder ub = UriComponentsBuilder.fromHttpUrl(restf.getBaseUrl());
+            ub.path(RestConstants.API_VERSION);
+            ub.path(RestConstants.ASYNC_JOB_PATH);
+            ub.path(apiUuid);
 
             ApiResponse response = new ApiResponse();
-            response.location = link;
+            response.location = ub.build().toUriString();
+
             bus.send(msg);
+
+            rsp.setStatus(HttpStatus.ACCEPTED.value());
+            rsp.getWriter().write(JSONObjectUtil.toJsonString(response));
         }
     }
 

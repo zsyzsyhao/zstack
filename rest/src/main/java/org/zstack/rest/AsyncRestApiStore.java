@@ -11,5 +11,5 @@ public interface AsyncRestApiStore {
 
     void complete(APIEvent evt);
 
-    AsyncRestQueryResult query(String path);
+    AsyncRestQueryResult query(String uuid);
 }
