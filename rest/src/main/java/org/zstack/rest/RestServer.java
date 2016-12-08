@@ -5,6 +5,7 @@ import org.reflections.Reflections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -13,6 +14,7 @@ import org.zstack.core.cloudbus.CloudBus;
 import org.zstack.core.cloudbus.CloudBusCallBack;
 import org.zstack.core.cloudbus.CloudBusEventListener;
 import org.zstack.header.Component;
+import org.zstack.header.apimediator.ApiMediatorConstant;
 import org.zstack.header.exception.CloudRuntimeException;
 import org.zstack.header.identity.SessionInventory;
 import org.zstack.header.identity.SuppressCredentialCheck;
@@ -42,6 +44,8 @@ public class RestServer implements Component, CloudBusEventListener {
     @Autowired
     private RESTFacade restf;
 
+    private static final String ASYNC_JOB_PATH_PATTERN = String.format("%s/%s/{uuid}", RestConstants.API_VERSION, RestConstants.ASYNC_JOB_PATH);
+
     @Override
     public boolean handleEvent(Event e) {
         if (e instanceof APIEvent) {
@@ -56,10 +60,12 @@ public class RestServer implements Component, CloudBusEventListener {
         Rest annotation;
         Map<String, String> requestMappingFields;
         Map<String, String> responseMappingFields = new HashMap<>();
+        String path;
 
         Api(Class clz, Rest at) {
             apiClass = clz;
             annotation = at;
+            path = String.format("%s%s", RestConstants.API_VERSION, at.path());
 
             if (at.requestMappingFields().length > 0) {
                 requestMappingFields = new HashMap<>();
@@ -108,12 +114,7 @@ public class RestServer implements Component, CloudBusEventListener {
     }
 
     void init() throws IllegalAccessException, InstantiationException {
-        Reflections reflections = Platform.getReflections();
-        Set<Class<? extends APIEvent>> evtClasses = reflections.getSubTypesOf(APIEvent.class);
-
-        for (Class evtClass : evtClasses) {
-            bus.subscribeEvent(this, (APIEvent)evtClass.newInstance());
-        }
+        bus.subscribeEvent(this, new APIEvent());
     }
 
     private AntPathMatcher matcher = new AntPathMatcher();
@@ -143,8 +144,13 @@ public class RestServer implements Component, CloudBusEventListener {
     }
 
     void handle(HttpServletRequest req, HttpServletResponse rsp) throws IOException {
+        if (matcher.match(ASYNC_JOB_PATH_PATTERN, req.getRequestURI())) {
+            handleJobQuery(req, rsp);
+            return;
+        }
+
         HttpEntity<String> entity = toHttpEntity(req);
-        String path = req.getPathInfo();
+        String path = req.getRequestURI();
 
         Object api = apis.get(path);
         if (api == null) {
@@ -157,7 +163,7 @@ public class RestServer implements Component, CloudBusEventListener {
         }
 
         if (api == null) {
-            rsp.sendError(HttpStatus.NOT_FOUND.value(), String.format("not api mapping to %s", path));
+            rsp.sendError(HttpStatus.NOT_FOUND.value(), String.format("no api mapping to %s", path));
             return;
         }
 
@@ -175,10 +181,39 @@ public class RestServer implements Component, CloudBusEventListener {
         }
     }
 
-    private void handleNonUniqueApi(Collection api, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) {
+    private void handleJobQuery(HttpServletRequest req, HttpServletResponse rsp) throws IOException {
+        if (!req.getMethod().equals(HttpMethod.GET.name())) {
+            rsp.sendError(HttpStatus.METHOD_NOT_ALLOWED.value(), "only GET method is allowed for querying job status");
+            return;
+        }
+
+        Map<String, String> vars = matcher.extractUriTemplateVariables(ASYNC_JOB_PATH_PATTERN, req.getRequestURI());
+        String uuid = vars.get("uuid");
+        AsyncRestQueryResult ret = asyncStore.query(uuid);
+
+        if (ret.getState() == AsyncRestState.expired) {
+            rsp.sendError(HttpStatus.NOT_FOUND.value(), "the job has been expired");
+            return;
+        }
+
+        rsp.setStatus(HttpStatus.OK.value());
+        rsp.getWriter().write(JSONObjectUtil.toJsonString(ret));
     }
 
-    private void handleUniqueApi(Api api, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    private void handleNonUniqueApi(Collection apis, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IOException {
+        Map m = JSONObjectUtil.toObject(entity.getBody(), LinkedHashMap.class);
+
+        Optional<Api> o = apis.stream().filter(a -> m.containsKey(((Api)a).annotation.actionName())).findAny();
+        if (!o.isPresent()) {
+            throw new RestException(HttpStatus.BAD_REQUEST.value(), String.format("the body doesn't contain any action mapping" +
+                    " to the URL[%s]", req.getRequestURI()));
+        }
+
+        Api api = o.get();
+        handleApi(api, m, api.annotation.actionName(), entity, req, rsp);
+    }
+
+    private void handleApi(Api api, Map body, String parameterName, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, IOException {
         String sessionId = null;
         if (!api.apiClass.isAnnotationPresent(SuppressCredentialCheck.class)) {
             String auth = entity.getHeaders().getFirst("Authorization");
@@ -194,9 +229,8 @@ public class RestServer implements Component, CloudBusEventListener {
             sessionId = auth.replaceFirst("OAuth", "").trim();
         }
 
-        Map<String, String> vars = matcher.extractUriTemplateVariables(api.annotation.path(), req.getPathInfo());
-        Map body = JSONObjectUtil.toObject(entity.getBody(), LinkedHashMap.class);
-        Object parameter = body.get(api.annotation.parameterName());
+        Map<String, String> vars = matcher.extractUriTemplateVariables(api.path, req.getRequestURI());
+        Object parameter = body.get(parameterName);
 
         APIMessage msg;
         if (parameter == null) {
@@ -228,16 +262,12 @@ public class RestServer implements Component, CloudBusEventListener {
             PropertyUtils.setProperty(msg, mappingKey == null ? key : mappingKey, e.getValue());
         }
 
-        try {
-            handleByMessage(msg, api, rsp);
-        } catch (Throwable t) {
+        msg.setServiceId(ApiMediatorConstant.SERVICE_ID);
+        handleByMessage(msg, api, rsp);
+    }
 
-            try {
-                rsp.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), t.getMessage());
-            } catch (IOException e) {
-                logger.warn("unhandled IO error", e);
-            }
-        }
+    private void handleUniqueApi(Api api, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, IOException {
+        handleApi(api, JSONObjectUtil.toObject(entity.getBody(), LinkedHashMap.class), api.annotation.parameterName(), entity, req, rsp);
     }
 
     private void writeReplyResponse(MessageReply reply, Api api, HttpServletResponse rsp) {
@@ -314,19 +344,21 @@ public class RestServer implements Component, CloudBusEventListener {
 
         for (Class clz : classes) {
             Rest at = (Rest) clz.getAnnotation(Rest.class);
-            if (!apis.containsKey(at.path())) {
-                apis.put(at.path(), new Api(clz, at));
+            Api api = new Api(clz, at);
+
+            if (!apis.containsKey(api.path)) {
+                apis.put(api.path, api);
             } else {
-                Object c = apis.get(at.path());
+                Object c = apis.get(api.path);
                 List lst;
                 if (c instanceof Api) {
                     lst = new ArrayList();
                     lst.add(c);
-                    apis.put(at.path(), lst);
+                    apis.put(api.path, lst);
                 } else {
                     lst = (List) c;
                 }
-                lst.add(new Api(clz, at));
+                lst.add(api);
             }
         }
     }

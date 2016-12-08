@@ -5,6 +5,6 @@ package org.zstack.rest;
  */
 public interface RestConstants {
     String API_VERSION = "/v1";
-
-    String ASYNC_JOB_PATH = "api-jobs";
+    String ASYNC_JOB_PATH = "/api-jobs";
+    String ALL_PATH = "/v1/**";
 }

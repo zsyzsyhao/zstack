@@ -1,5 +1,7 @@
 package org.zstack.rest;
 
+import org.zstack.header.vo.Index;
+
 import javax.persistence.*;
 import java.sql.Timestamp;
 
@@ -18,6 +20,7 @@ public class AsyncRestVO {
 
     @Column
     @Enumerated(EnumType.STRING)
+    @Index
     private AsyncRestState state;
 
     @Column

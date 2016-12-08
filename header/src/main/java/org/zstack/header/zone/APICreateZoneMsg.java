@@ -35,7 +35,8 @@ import org.zstack.header.rest.Rest;
 @Rest(
         path = "/zones",
         method = HttpMethod.POST,
-        parameterName = "zone"
+        parameterName = "zone",
+        responseMappingAllTo = "inventory"
 )
 public class APICreateZoneMsg extends APICreateMessage {
     /**

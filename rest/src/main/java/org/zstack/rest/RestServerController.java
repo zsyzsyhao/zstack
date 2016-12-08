@@ -19,7 +19,7 @@ public class RestServerController {
     private RestServer server;
 
     @RequestMapping(
-            value = RestConstants.API_VERSION,
+            value = RestConstants.ALL_PATH,
             method = {
                     RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.GET,
                     RequestMethod.HEAD, RequestMethod.OPTIONS, RequestMethod.PATCH, RequestMethod.TRACE
