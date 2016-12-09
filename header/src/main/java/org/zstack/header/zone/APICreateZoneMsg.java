@@ -5,6 +5,7 @@ import org.zstack.header.message.APICreateMessage;
 import org.zstack.header.message.APIParam;
 import org.zstack.header.rest.APINoSee;
 import org.zstack.header.rest.RestRequest;
+import org.zstack.header.rest.Sdk;
 
 /**
  * @api create a new zone

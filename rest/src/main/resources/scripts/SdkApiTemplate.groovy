@@ -1,8 +1,11 @@
 package scripts
 
 import org.apache.commons.lang.StringUtils
+import org.springframework.util.AntPathMatcher
+import org.zstack.header.identity.SuppressCredentialCheck
 import org.zstack.header.message.APIParam
 import org.zstack.header.rest.APINoSee
+import org.zstack.header.rest.RestRequest
 import org.zstack.rest.JavaSdkTemplate
 import org.zstack.utils.FieldUtils
 
@@ -13,16 +16,18 @@ import java.lang.reflect.Field
  */
 class SdkApiTemplate implements JavaSdkTemplate {
     Class apiMessageClass
+    RestRequest requestAnnotation
 
     SdkApiTemplate(Class apiMessageClass) {
         this.apiMessageClass = apiMessageClass
+        this.requestAnnotation = apiMessageClass.getAnnotation(RestRequest.class)
     }
 
     def generateClassName() {
         def name = StringUtils.stripStart(apiMessageClass.getSimpleName(), "API")
         name = StringUtils.stripEnd(name, "Msg")
         name = StringUtils.capitalize(name)
-        return String.format("ZS%s", name)
+        return String.format("%sAction", name)
     }
 
     def generateFields() {
@@ -68,15 +73,48 @@ class SdkApiTemplate implements JavaSdkTemplate {
             output.add(fs.toString())
         }
 
+        if (!apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)) {
+            output.add("""\
+    @Param(required = true)
+    public String sessionId;
+""")
+        }
+
         return output.join("\n")
+    }
+
+    def generateMethods() {
+        def ms = []
+        ms.add("""\
+    public ApiResult call() {
+        return ZSClient.call(this);
+    }
+""")
+        ms.add("""\
+    RestInfo getRestInfo() {
+        RestInfo info = new RestInfo()
+        info.httpMethod = ${requestAnnotation.method().name()}
+        info.path = ${requestAnnotation.path()}
+        return info
+    }
+""")
+
+        return ms.join("\n")
+    }
+
+    def generateUrlParameters() {
+        AntPathMatcher matcher = new AntPathMatcher()
+        matcher.extractUriTemplateVariables()
     }
 
     @Override
     String generate() {
         return """package org.zstack.sdk;
 
-public class ${generateClassName()} {
+public class ${generateClassName()} extends AbstractAction {
 ${generateFields()}
+
+${generateMethods()}
 }
 """.toString()
     }
