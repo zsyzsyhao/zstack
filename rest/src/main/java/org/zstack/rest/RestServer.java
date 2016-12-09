@@ -22,7 +22,9 @@ import org.zstack.header.message.*;
 import org.zstack.header.rest.RESTFacade;
 import org.zstack.header.rest.RestRequest;
 import org.zstack.header.rest.RestResponse;
+import org.zstack.header.zone.APICreateZoneMsg;
 import org.zstack.utils.DebugUtils;
+import org.zstack.utils.GroovyUtils;
 import org.zstack.utils.Utils;
 import org.zstack.utils.gson.JSONObjectUtil;
 import org.zstack.utils.logging.CLogger;
@@ -47,6 +49,17 @@ public class RestServer implements Component, CloudBusEventListener {
     private RESTFacade restf;
 
     private static final String ASYNC_JOB_PATH_PATTERN = String.format("%s/%s/{uuid}", RestConstants.API_VERSION, RestConstants.ASYNC_JOB_PATH);
+
+    public static void generateJavaSdk() {
+        try {
+            Class clz = GroovyUtils.getClass("scripts/SdkApiTemplate.groovy", RestServer.class.getClassLoader());
+            JavaSdkTemplate tmp = (JavaSdkTemplate) clz.getConstructor(Class.class).newInstance(APICreateZoneMsg.class);
+            logger.debug(String.format("\n%s", tmp.generate()));
+        } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
+            throw new CloudRuntimeException(e);
+        }
+    }
 
     @Override
     public boolean handleEvent(Event e) {

@@ -3,6 +3,7 @@ package org.zstack.header.zone;
 import org.springframework.http.HttpMethod;
 import org.zstack.header.message.APICreateMessage;
 import org.zstack.header.message.APIParam;
+import org.zstack.header.rest.APINoSee;
 import org.zstack.header.rest.RestRequest;
 
 /**
@@ -55,6 +56,7 @@ public class APICreateZoneMsg extends APICreateMessage {
      * @choices zstack
      */
     @APIParam(required = false, validValues = {"zstack"})
+    @APINoSee
     private String type;
 
     public String getDescription() {
