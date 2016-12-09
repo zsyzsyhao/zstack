@@ -84,6 +84,8 @@
 
         <Logger name="org.zstack.core.defer" level="TRACE" />
 
+   	<Logger name="com.github.isrsal.logging.LoggingFilter" level="DEBUG" />
+
         <!--
         <Logger name="com.datastax.driver.core" level="TRACE" />
         -->

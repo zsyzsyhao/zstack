@@ -275,7 +275,7 @@ public class RestServer implements Component, CloudBusEventListener {
             ApiResponse response = new ApiResponse();
 
             if (!reply.isSuccess()) {
-                response.error = reply.getError();
+                response.setError(reply.getError());
                 rsp.sendError(HttpStatus.SERVICE_UNAVAILABLE.value(), JSONObjectUtil.toJsonString(response));
                 return;
             }
@@ -283,11 +283,11 @@ public class RestServer implements Component, CloudBusEventListener {
             // the api succeeded
 
             if (!api.annotation.responseMappingAllTo().equals("")) {
-                PropertyUtils.setProperty(response, api.annotation.responseMappingAllTo(),
+                response.put(api.annotation.responseMappingAllTo(),
                         PropertyUtils.getProperty(reply, api.annotation.responseMappingAllTo()));
             } else {
                 for (Map.Entry<String, String> e : api.responseMappingFields.entrySet()) {
-                    PropertyUtils.setProperty(response, e.getKey(),
+                    response.put(e.getKey(),
                             PropertyUtils.getProperty(reply, e.getValue()));
                 }
             }
@@ -320,10 +320,10 @@ public class RestServer implements Component, CloudBusEventListener {
             UriComponentsBuilder ub = UriComponentsBuilder.fromHttpUrl(restf.getBaseUrl());
             ub.path(RestConstants.API_VERSION);
             ub.path(RestConstants.ASYNC_JOB_PATH);
-            ub.path(apiUuid);
+            ub.path("/" + apiUuid);
 
             ApiResponse response = new ApiResponse();
-            response.location = ub.build().toUriString();
+            response.setLocation(ub.build().toUriString());
 
             bus.send(msg);
 

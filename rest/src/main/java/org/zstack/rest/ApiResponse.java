@@ -8,6 +8,24 @@ import java.util.HashMap;
  * Created by xing5 on 2016/12/8.
  */
 public class ApiResponse extends HashMap {
-    public String location;
-    public ErrorCode error;
+    private String location;
+    private ErrorCode error;
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+        put("location", location);
+    }
+
+    public ErrorCode getError() {
+        return error;
+    }
+
+    public void setError(ErrorCode error) {
+        this.error = error;
+        put("error", error);
+    }
 }

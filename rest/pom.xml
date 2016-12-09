@@ -33,6 +33,10 @@
             <artifactId>servlet-api</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.isrsal</groupId>
+            <artifactId>spring-mvc-logger</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
