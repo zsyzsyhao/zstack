@@ -2,15 +2,16 @@ package org.zstack.header.zone;
 
 import org.zstack.header.message.APIMessage;
 import org.zstack.header.message.APIParam;
-import org.zstack.header.rest.Rest;
+import org.zstack.header.rest.RestRequest;
 
 /**
  * Created by frank on 6/14/2015.
  */
-@Rest(
+@RestRequest(
         path = "/zones/{uuid}/actions",
         actionName = "update",
-        parameterName = "update"
+        parameterName = "update",
+        responseClass = APIUpdateZoneEvent.class
 )
 public class APIUpdateZoneMsg extends APIMessage implements ZoneMessage {
     @APIParam(maxLength = 255, required = false)

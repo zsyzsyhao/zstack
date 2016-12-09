@@ -2,7 +2,7 @@ package org.zstack.header.zone;
 
 import org.zstack.header.message.APIMessage;
 import org.zstack.header.message.APIParam;
-import org.zstack.header.rest.Rest;
+import org.zstack.header.rest.RestRequest;
 
 
 /**
@@ -38,10 +38,11 @@ import org.zstack.header.rest.Rest;
  * @result see :ref:`APIChangeZoneStateEvent`
  * @since 0.1.0
  */
-@Rest(
+@RestRequest(
         path = "/zones/{uuid}/actions",
         actionName = "changeState",
-        parameterName = "changeState"
+        parameterName = "changeState",
+        responseClass = APIChangeZoneStateEvent.class
 )
 public class APIChangeZoneStateMsg extends APIMessage implements ZoneMessage {
     /**

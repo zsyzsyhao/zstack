@@ -9,6 +9,7 @@ import org.zstack.header.rest.RESTConstant;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Created by xing5 on 2016/12/7.
@@ -25,7 +26,7 @@ public class RestServerController {
                     RequestMethod.HEAD, RequestMethod.OPTIONS, RequestMethod.PATCH, RequestMethod.TRACE
             }
     )
-    public void api(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void api(HttpServletRequest request, HttpServletResponse response) throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         server.handle(request, response);
     }
 }

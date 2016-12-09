@@ -3,7 +3,7 @@ package org.zstack.header.zone;
 import org.springframework.http.HttpMethod;
 import org.zstack.header.message.APICreateMessage;
 import org.zstack.header.message.APIParam;
-import org.zstack.header.rest.Rest;
+import org.zstack.header.rest.RestRequest;
 
 /**
  * @api create a new zone
@@ -32,11 +32,11 @@ import org.zstack.header.rest.Rest;
  * @result see :ref:`APICreateZoneEvent`
  * @since 0.1.0
  */
-@Rest(
+@RestRequest(
         path = "/zones",
         method = HttpMethod.POST,
         parameterName = "zone",
-        responseMappingAllTo = "inventory"
+        responseClass = APICreateZoneEvent.class
 )
 public class APICreateZoneMsg extends APICreateMessage {
     /**

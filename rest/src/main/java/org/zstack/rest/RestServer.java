@@ -20,7 +20,9 @@ import org.zstack.header.identity.SessionInventory;
 import org.zstack.header.identity.SuppressCredentialCheck;
 import org.zstack.header.message.*;
 import org.zstack.header.rest.RESTFacade;
-import org.zstack.header.rest.Rest;
+import org.zstack.header.rest.RestRequest;
+import org.zstack.header.rest.RestResponse;
+import org.zstack.utils.DebugUtils;
 import org.zstack.utils.Utils;
 import org.zstack.utils.gson.JSONObjectUtil;
 import org.zstack.utils.logging.CLogger;
@@ -57,20 +59,22 @@ public class RestServer implements Component, CloudBusEventListener {
 
     class Api {
         Class apiClass;
-        Rest annotation;
+        Class apiResponseClass;
+        RestRequest requestAnnotation;
+        RestResponse responseAnnotation;
         Map<String, String> requestMappingFields;
-        Map<String, String> responseMappingFields = new HashMap<>();
         String path;
 
-        Api(Class clz, Rest at) {
+        Api(Class clz, RestRequest at) {
             apiClass = clz;
-            annotation = at;
+            requestAnnotation = at;
+            apiResponseClass = at.responseClass();
             path = String.format("%s%s", RestConstants.API_VERSION, at.path());
 
-            if (at.requestMappingFields().length > 0) {
+            if (at.mappingFields().length > 0) {
                 requestMappingFields = new HashMap<>();
 
-                for (String mf : at.requestMappingFields()) {
+                for (String mf : at.mappingFields()) {
                     String[] kv = mf.split("=");
                     if (kv.length != 2) {
                         throw new CloudRuntimeException(String.format("bad requestMappingField[%s] of %s", mf, apiClass));
@@ -79,19 +83,10 @@ public class RestServer implements Component, CloudBusEventListener {
                     requestMappingFields.put(kv[0].trim(), kv[1].trim());
                 }
             }
+            responseAnnotation = (RestResponse) apiResponseClass.getAnnotation(RestResponse.class);
+            DebugUtils.Assert(responseAnnotation != null, String.format("%s must be annotated with @RestResponse", apiResponseClass));
 
-            if (at.responseMappingFields().length > 0) {
-                responseMappingFields = new HashMap<>();
 
-                for (String mf : at.responseMappingFields()) {
-                    String[] kv = mf.split("=");
-                    if (kv.length != 2) {
-                        throw new CloudRuntimeException(String.format("bad responseMappingField[%s] of %s", mf, apiClass));
-                    }
-
-                    responseMappingFields.put(kv[0].trim(), kv[1].trim());
-                }
-            }
         }
 
         String getMappingField(String key) {
@@ -113,6 +108,30 @@ public class RestServer implements Component, CloudBusEventListener {
         }
     }
 
+    class RestResponseWrapper {
+        RestResponse annotation;
+        Map<String, String> responseMappingFields = new HashMap<>();
+        Class apiResponseClass;
+
+        public RestResponseWrapper(RestResponse annotation, Class apiResponseClass) {
+            this.annotation = annotation;
+            this.apiResponseClass = apiResponseClass;
+
+            if (annotation.mappingFields().length > 0) {
+                responseMappingFields = new HashMap<>();
+
+                for (String mf : annotation.mappingFields()) {
+                    String[] kv = mf.split("=");
+                    if (kv.length != 2) {
+                        throw new CloudRuntimeException(String.format("bad mappingFields[%s] of %s", mf, apiResponseClass));
+                    }
+
+                    responseMappingFields.put(kv[0].trim(), kv[1].trim());
+                }
+            }
+        }
+    }
+
     void init() throws IllegalAccessException, InstantiationException {
         bus.subscribeEvent(this, new APIEvent());
     }
@@ -120,6 +139,7 @@ public class RestServer implements Component, CloudBusEventListener {
     private AntPathMatcher matcher = new AntPathMatcher();
 
     private Map<String, Object> apis = new HashMap<>();
+    private Map<Class, RestResponseWrapper> responseAnnotationByClass = new HashMap<>();
 
     private HttpEntity<String> toHttpEntity(HttpServletRequest req) {
         try {
@@ -143,7 +163,7 @@ public class RestServer implements Component, CloudBusEventListener {
         }
     }
 
-    void handle(HttpServletRequest req, HttpServletResponse rsp) throws IOException {
+    void handle(HttpServletRequest req, HttpServletResponse rsp) throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (matcher.match(ASYNC_JOB_PATH_PATTERN, req.getRequestURI())) {
             handleJobQuery(req, rsp);
             return;
@@ -181,7 +201,7 @@ public class RestServer implements Component, CloudBusEventListener {
         }
     }
 
-    private void handleJobQuery(HttpServletRequest req, HttpServletResponse rsp) throws IOException {
+    private void handleJobQuery(HttpServletRequest req, HttpServletResponse rsp) throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (!req.getMethod().equals(HttpMethod.GET.name())) {
             rsp.sendError(HttpStatus.METHOD_NOT_ALLOWED.value(), "only GET method is allowed for querying job status");
             return;
@@ -196,21 +216,36 @@ public class RestServer implements Component, CloudBusEventListener {
             return;
         }
 
-        rsp.setStatus(HttpStatus.OK.value());
-        rsp.getWriter().write(JSONObjectUtil.toJsonString(ret));
+        ApiResponse response = new ApiResponse();
+        response.setState(ret.getState());
+        if (ret.getResult() != null) {
+            writeResponse(response, responseAnnotationByClass.get(ret.getResult().getClass()), ret.getResult());
+        }
+
+        sendResponse(response, rsp);
+    }
+
+    private void sendResponse(ApiResponse response, HttpServletResponse rsp) throws IOException {
+        if (response.isEmpty()) {
+            rsp.setStatus(HttpStatus.NO_CONTENT.value());
+            rsp.getWriter().write("");
+        } else {
+            rsp.setStatus(HttpStatus.OK.value());
+            rsp.getWriter().write(JSONObjectUtil.toJsonString(response));
+        }
     }
 
     private void handleNonUniqueApi(Collection apis, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IOException {
         Map m = JSONObjectUtil.toObject(entity.getBody(), LinkedHashMap.class);
 
-        Optional<Api> o = apis.stream().filter(a -> m.containsKey(((Api)a).annotation.actionName())).findAny();
+        Optional<Api> o = apis.stream().filter(a -> m.containsKey(((Api)a).requestAnnotation.actionName())).findAny();
         if (!o.isPresent()) {
             throw new RestException(HttpStatus.BAD_REQUEST.value(), String.format("the body doesn't contain any action mapping" +
                     " to the URL[%s]", req.getRequestURI()));
         }
 
         Api api = o.get();
-        handleApi(api, m, api.annotation.actionName(), entity, req, rsp);
+        handleApi(api, m, api.requestAnnotation.actionName(), entity, req, rsp);
     }
 
     private void handleApi(Api api, Map body, String parameterName, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, IOException {
@@ -263,14 +298,26 @@ public class RestServer implements Component, CloudBusEventListener {
         }
 
         msg.setServiceId(ApiMediatorConstant.SERVICE_ID);
-        handleByMessage(msg, api, rsp);
+        sendMessage(msg, api, rsp);
     }
 
     private void handleUniqueApi(Api api, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, IOException {
-        handleApi(api, JSONObjectUtil.toObject(entity.getBody(), LinkedHashMap.class), api.annotation.parameterName(), entity, req, rsp);
+        handleApi(api, JSONObjectUtil.toObject(entity.getBody(), LinkedHashMap.class), api.requestAnnotation.parameterName(), entity, req, rsp);
     }
 
-    private void writeReplyResponse(MessageReply reply, Api api, HttpServletResponse rsp) {
+    private void writeResponse(ApiResponse response, RestResponseWrapper w, Object replyOrEvent) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        if (!w.annotation.mappingAllTo().equals("")) {
+            response.put(w.annotation.mappingAllTo(),
+                    PropertyUtils.getProperty(replyOrEvent, w.annotation.mappingAllTo()));
+        } else {
+            for (Map.Entry<String, String> e : w.responseMappingFields.entrySet()) {
+                response.put(e.getKey(),
+                        PropertyUtils.getProperty(replyOrEvent, e.getValue()));
+            }
+        }
+    }
+
+    private void sendReplyResponse(MessageReply reply, Api api, HttpServletResponse rsp) {
         try {
             ApiResponse response = new ApiResponse();
 
@@ -282,18 +329,8 @@ public class RestServer implements Component, CloudBusEventListener {
 
             // the api succeeded
 
-            if (!api.annotation.responseMappingAllTo().equals("")) {
-                response.put(api.annotation.responseMappingAllTo(),
-                        PropertyUtils.getProperty(reply, api.annotation.responseMappingAllTo()));
-            } else {
-                for (Map.Entry<String, String> e : api.responseMappingFields.entrySet()) {
-                    response.put(e.getKey(),
-                            PropertyUtils.getProperty(reply, e.getValue()));
-                }
-            }
-
-            rsp.setStatus(HttpStatus.OK.value());
-            rsp.getWriter().write(JSONObjectUtil.toJsonString(response));
+            writeResponse(response, responseAnnotationByClass.get(api.apiResponseClass), reply);
+            sendResponse(response, rsp);
         } catch (IOException e) {
             logger.warn("unhandled IO error happened", e);
         } catch (Throwable t) {
@@ -307,12 +344,12 @@ public class RestServer implements Component, CloudBusEventListener {
         }
     }
 
-    private void handleByMessage(APIMessage msg, Api api, HttpServletResponse rsp) throws IOException {
+    private void sendMessage(APIMessage msg, Api api, HttpServletResponse rsp) throws IOException {
         if (msg instanceof APISyncCallMessage) {
             bus.send(msg, new CloudBusCallBack() {
                 @Override
                 public void run(MessageReply reply) {
-                    writeReplyResponse(reply, api, rsp);
+                    sendReplyResponse(reply, api, rsp);
                 }
             });
         } else {
@@ -340,10 +377,10 @@ public class RestServer implements Component, CloudBusEventListener {
 
     private void build() {
         Reflections reflections = Platform.getReflections();
-        Set<Class<?>> classes = reflections.getTypesAnnotatedWith(Rest.class);
+        Set<Class<?>> classes = reflections.getTypesAnnotatedWith(RestRequest.class);
 
         for (Class clz : classes) {
-            Rest at = (Rest) clz.getAnnotation(Rest.class);
+            RestRequest at = (RestRequest) clz.getAnnotation(RestRequest.class);
             Api api = new Api(clz, at);
 
             if (!apis.containsKey(api.path)) {
@@ -360,6 +397,8 @@ public class RestServer implements Component, CloudBusEventListener {
                 }
                 lst.add(api);
             }
+
+            responseAnnotationByClass.put(api.apiResponseClass, new RestResponseWrapper(api.responseAnnotation, api.apiResponseClass));
         }
     }
 

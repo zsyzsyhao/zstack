@@ -12,12 +12,11 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Rest {
+public @interface RestRequest {
     String path();
     HttpMethod method() default HttpMethod.PUT;
     String actionName() default "";
     String parameterName();
-    String[] requestMappingFields() default {};
-    String responseMappingAllTo() default "";
-    String[] responseMappingFields() default {};
+    String[] mappingFields() default {};
+    Class responseClass();
 }
