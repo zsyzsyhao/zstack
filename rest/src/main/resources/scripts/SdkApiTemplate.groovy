@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils
 import org.springframework.util.AntPathMatcher
 import org.zstack.header.identity.SuppressCredentialCheck
 import org.zstack.header.message.APIParam
+import org.zstack.header.message.APISyncCallMessage
 import org.zstack.header.rest.APINoSee
 import org.zstack.header.rest.RestRequest
 import org.zstack.rest.JavaSdkTemplate
@@ -80,6 +81,14 @@ class SdkApiTemplate implements JavaSdkTemplate {
 """)
         }
 
+        if (!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)) {
+            output.add("""\
+    public long timeout;
+    
+    public long pollingInterval;
+""")
+        }
+
         return output.join("\n")
     }
 
@@ -95,6 +104,8 @@ class SdkApiTemplate implements JavaSdkTemplate {
         RestInfo info = new RestInfo()
         info.httpMethod = ${requestAnnotation.method().name()}
         info.path = ${requestAnnotation.path()}
+        info.needSession = ${apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)}
+        info.needPoll = ${!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)}
         return info
     }
 """)

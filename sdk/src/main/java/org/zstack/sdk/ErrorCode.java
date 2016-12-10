@@ -1,8 +1,5 @@
 package org.zstack.sdk;
 
-import org.zstack.header.exception.CloudRuntimeException;
-import org.zstack.utils.gson.JSONObjectUtil;
-
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 
@@ -81,17 +78,9 @@ public class ErrorCode implements Serializable, Cloneable {
         this.details = details;
     }
 
-    public ErrorCode copy() {
-        try {
-            return (ErrorCode) this.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new CloudRuntimeException(e);
-        }
-    }
-
     @Override
     public String toString() {
-        return JSONObjectUtil.toJsonString(this);
+        return ZSClient.gson.toJson(this);
     }
 
     public static ErrorCode fromString(String err) {

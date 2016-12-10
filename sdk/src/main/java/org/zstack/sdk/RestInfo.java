@@ -6,4 +6,6 @@ package org.zstack.sdk;
 class RestInfo {
     String httpMethod;
     String path;
+    boolean needSession;
+    boolean needPoll;
 }

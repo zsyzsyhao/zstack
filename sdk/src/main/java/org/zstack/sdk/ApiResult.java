@@ -4,8 +4,8 @@ package org.zstack.sdk;
  * Created by xing5 on 2016/12/9.
  */
 public class ApiResult<T> {
-    private ErrorCode error;
-    private T result;
+    ErrorCode error;
+    T result;
 
     public ErrorCode getError() {
         return error;
