@@ -7,7 +7,9 @@ import org.zstack.header.message.APIParam
 import org.zstack.header.message.APISyncCallMessage
 import org.zstack.header.rest.APINoSee
 import org.zstack.header.rest.RestRequest
-import org.zstack.rest.JavaSdkTemplate
+import org.zstack.header.rest.RestResponse
+import org.zstack.rest.sdk.JavaSdkTemplate
+import org.zstack.rest.sdk.SdkFile
 import org.zstack.utils.FieldUtils
 
 import java.lang.reflect.Field
@@ -16,19 +18,28 @@ import java.lang.reflect.Field
  * Created by xing5 on 2016/12/9.
  */
 class SdkApiTemplate implements JavaSdkTemplate {
+    static Map<String, SdkFile> generatedFiles = [:]
+
     Class apiMessageClass
     RestRequest requestAnnotation
+    RestResponse responseAnnotation
+    Class responseClass
 
     SdkApiTemplate(Class apiMessageClass) {
         this.apiMessageClass = apiMessageClass
         this.requestAnnotation = apiMessageClass.getAnnotation(RestRequest.class)
+        responseClass = requestAnnotation.responseClass()
+        responseAnnotation = responseClass.getAnnotation(RestResponse.class)
+    }
+
+    def normalizeApiName() {
+        def name = StringUtils.stripStart(apiMessageClass.getSimpleName(), "API")
+        name = StringUtils.stripEnd(name, "Msg")
+        return StringUtils.capitalize(name)
     }
 
     def generateClassName() {
-        def name = StringUtils.stripStart(apiMessageClass.getSimpleName(), "API")
-        name = StringUtils.stripEnd(name, "Msg")
-        name = StringUtils.capitalize(name)
-        return String.format("%sAction", name)
+        return String.format("%sAction", normalizeApiName())
     }
 
     def generateFields() {
@@ -113,14 +124,10 @@ class SdkApiTemplate implements JavaSdkTemplate {
         return ms.join("\n")
     }
 
-    def generateUrlParameters() {
-        AntPathMatcher matcher = new AntPathMatcher()
-        matcher.extractUriTemplateVariables()
-    }
-
-    @Override
-    String generate() {
-        return """package org.zstack.sdk;
+    def generateAction() {
+        def f = new SdkFile()
+        f.fileName = "${generateClassName()}.java"
+        f.content = """package org.zstack.sdk;
 
 public class ${generateClassName()} extends AbstractAction {
 ${generateFields()}
@@ -128,5 +135,54 @@ ${generateFields()}
 ${generateMethods()}
 }
 """.toString()
+
+        return f
+    }
+
+    def generateResultClasses() {
+        def m = [:]
+
+        if (!responseAnnotation.mappingAllTo().isEmpty()) {
+            m[responseAnnotation.mappingAllTo()] = responseAnnotation.mappingAllTo()
+            return generateClass("${normalizeApiName()}Result".toString(), m, responseClass)
+        } else {
+            for (String mf : responseAnnotation.mappingFields()) {
+                def mfs = mf.split("=")
+                m[mfs[0].trim()] = mfs[1].trim()
+            }
+
+            return generateClass("${normalizeApiName()}Result".toString(), m, responseClass)
+        }
+    }
+
+    def generateClass(String className, Map<String, String> fieldMapping, Class sourceClass) {
+        if (generatedFiles.containsKey(className)) {
+            return [generatedFiles[className]]
+        }
+
+        def newFields = []
+        fieldMapping.each { k, v ->
+            Field sourceField = sourceClass.getField(v)
+            if (sourceField.type.name.startsWith("java.")) {
+                if (Collection.class.isAssignableFrom(sourceField.type)) {
+
+                } else if (Map.class.isAssignableFrom(sourceField.type)) {
+
+                } else {
+                    // normal java type
+                    newFields.add("""\
+    public ${sourceField.type.name} ${k};
+""")
+                }
+            }
+        }
+    }
+
+    @Override
+    List<SdkFile> generate() {
+        def files = []
+        files.add(generateAction())
+
+        return files
     }
 }
