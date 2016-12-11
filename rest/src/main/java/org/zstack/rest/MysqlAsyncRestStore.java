@@ -65,7 +65,7 @@ public class MysqlAsyncRestStore implements AsyncRestApiStore, Component {
             UpdateQuery q = UpdateQuery.New();
             q.entity(AsyncRestVO.class);
             q.condAnd(AsyncRestVO_.uuid, SimpleQuery.Op.EQ, evt.getApiId());
-            q.set(AsyncRestVO_.result, JSONObjectUtil.toJsonString(evt));
+            q.set(AsyncRestVO_.result, JSONObjectUtil.toJsonString(map(e(evt.getClass().getName(), evt))));
             q.set(AsyncRestVO_.state, AsyncRestState.done);
             q.update();
         }

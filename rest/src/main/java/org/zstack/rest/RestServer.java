@@ -54,10 +54,8 @@ import java.util.*;
 /**
  * Created by xing5 on 2016/12/7.
  */
-public class RestServer implements Component, CloudBusEventListener, HandlerInterceptor {
+public class RestServer implements Component, CloudBusEventListener {
     private static final CLogger logger = Utils.getLogger(RestServer.class);
-    private static final Logger requestLogger = LogManager.getLogger("api.request");
-    private static final Logger responseLogger = LogManager.getLogger("api.response");
 
     @Autowired
     private CloudBus bus;
@@ -103,44 +101,6 @@ public class RestServer implements Component, CloudBusEventListener, HandlerInte
         }
 
         return false;
-    }
-
-    @Override
-    public boolean preHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o) throws Exception {
-        if (requestLogger.isTraceEnabled()) {
-            HttpServletRequest req = new ContentCachingRequestWrapper(httpServletRequest);
-            StringBuilder sb = new StringBuilder(String.format("request from %s (to %s), ", req.getRemoteHost(), req.getRequestURI()));
-            HttpEntity<String> entity = toHttpEntity(req);
-            sb.append(String.format(" Headers: %s,", entity.getHeaders()));
-            sb.append(String.format(" Body: %s", entity.getBody()));
-
-            requestLogger.trace(sb.toString());
-        }
-
-        return true;
-    }
-
-    @Override
-    public void postHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, ModelAndView modelAndView) throws Exception {
-
-    }
-
-    @Override
-    public void afterCompletion(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) throws Exception {
-        if (requestLogger.isTraceEnabled()) {
-            ContentCachingResponseWrapper rsp = WebUtils.getNativeResponse(httpServletResponse, ContentCachingResponseWrapper.class);
-            StringBuilder sb = new StringBuilder(String.format("response to %s (%s),", httpServletRequest.getRemoteHost(), httpServletRequest.getRequestURI()));
-            sb.append(String.format(" Status Code: %s,", rsp.getStatusCode()));
-
-            byte[] buf = rsp.getContentAsByteArray();
-            if (buf.length > 0) {
-                String body = new String(buf, 0, buf.length, rsp.getCharacterEncoding());
-                rsp.copyBodyToResponse();
-                sb.append(String.format(" Body: %s", body));
-            }
-
-            requestLogger.trace(sb.toString());
-        }
     }
 
     class Api {

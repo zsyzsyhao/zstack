@@ -77,11 +77,11 @@
         </Logger>
 
         <Logger name="api.request" level="TRACE" additivity="TRUE">
-            <AppenderRef ref="ApiRequestLogger" level="DEBUG" />
+            <AppenderRef ref="ApiRequestLogger" level="TRACE" />
         </Logger>
 
         <Logger name="api.response" level="TRACE" additivity="TRUE">
-            <AppenderRef ref="ApiReponseLogger" level="DEBUG" />
+            <AppenderRef ref="ApiReponseLogger" level="TRACE" />
         </Logger>
 
         <Logger name="org.zstack" level="DEBUG" />
