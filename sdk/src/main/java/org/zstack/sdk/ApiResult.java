@@ -3,9 +3,9 @@ package org.zstack.sdk;
 /**
  * Created by xing5 on 2016/12/9.
  */
-public class ApiResult<T> {
+public class ApiResult {
     ErrorCode error;
-    String resultString;
+    private String resultString;
 
     public ErrorCode getError() {
         return error;
@@ -19,7 +19,7 @@ public class ApiResult<T> {
         this.resultString = resultString;
     }
 
-    public T getResult(Class<T> clz) {
+    <T> T getResult(Class<T> clz) {
         return resultString == null || resultString.isEmpty() ? null : ZSClient.gson.fromJson(resultString, clz);
     }
 }

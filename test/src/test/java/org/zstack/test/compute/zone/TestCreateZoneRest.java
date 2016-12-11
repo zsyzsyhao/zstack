@@ -2,10 +2,7 @@ package org.zstack.test.compute.zone;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.zstack.core.componentloader.ComponentLoader;
@@ -79,7 +76,7 @@ public class TestCreateZoneRest {
                 logger.debug(String.format("xxxxxxxxxxxxxxxxxx %s", url));
                 ResponseEntity<String> r = tmp.getForEntity(url, String.class);
                 AsyncRestQueryResult ret = JSONObjectUtil.toObject(r.getBody(), AsyncRestQueryResult.class);
-                if (ret.getState() == AsyncRestState.done) {
+                if (r.getStatusCode() == HttpStatus.OK) {
                     logger.debug(JSONObjectUtil.toJsonString(ret.getResult()));
                     break;
                 }

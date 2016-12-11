@@ -119,17 +119,16 @@ class SdkApiTemplate implements JavaSdkTemplate {
         }
         
         ${resultClassName} value = res.getResult(${resultClassName}.class);
-        ret.value = value == null ? new ${resultClassName} : value;
+        ret.value = value == null ? new ${resultClassName}() : value;
         return ret;
     }
 """)
 
         ms.add("""\
-    public Result call(Completion<Result> completion) {
+    public void call(final Completion<Result> completion) {
         ZSClient.call(this, new InternalCompletion() {
             @Override
-            void complete(ApiResult res) {
-                ApiResult res = ZSClient.call(this);
+            public void complete(ApiResult res) {
                 Result ret = new Result();
                 if (res.error != null) {
                     ret.error = res.error;
@@ -138,7 +137,7 @@ class SdkApiTemplate implements JavaSdkTemplate {
                 }
                 
                 ${resultClassName} value = res.getResult(${resultClassName}.class);
-                ret.value = value == null ? new ${resultClassName} : value;
+                ret.value = value == null ? new ${resultClassName}() : value;
                 completion.complete(ret);
             }
         });
@@ -150,7 +149,7 @@ class SdkApiTemplate implements JavaSdkTemplate {
         RestInfo info = new RestInfo();
         info.httpMethod = "${requestAnnotation.method().name()}";
         info.path = "${requestAnnotation.path()}";
-        info.needSession = ${apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)};
+        info.needSession = ${!apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)};
         info.needPoll = ${!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)};
         return info;
     }

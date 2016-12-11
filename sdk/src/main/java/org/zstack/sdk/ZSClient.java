@@ -92,7 +92,7 @@ public class ZSClient {
                     .build();
 
             String urlstr;
-            List<String> varNames = getVarNamesFromUrl(url.toString());
+            List<String> varNames = getVarNamesFromUrl(url.url().toString());
             if (!varNames.isEmpty()) {
                 Map<String, Object> vars = new HashMap<>();
                 for (String vname : varNames) {
@@ -105,9 +105,9 @@ public class ZSClient {
                     vars.put(vname, value);
                 }
 
-                urlstr = substituteUrl(url.toString(), vars);
+                urlstr = substituteUrl(url.url().toString(), vars);
             } else {
-                urlstr = url.toString();
+                urlstr = url.url().toString();
             }
 
             Map<String, Object> body = new HashMap<>();
@@ -137,7 +137,7 @@ public class ZSClient {
             try {
                 Response response = http.newCall(request).execute();
                 if (!response.isSuccessful()) {
-                    return httpError(response.code(), response.body().toString());
+                    return httpError(response.code(), response.body().string());
                 }
 
                 if (response.code() == 200 || response.code() == 204) {
@@ -152,13 +152,13 @@ public class ZSClient {
             }
         }
 
-        private ApiResult pollResult(Response response) {
+        private ApiResult pollResult(Response response) throws IOException {
             if (!info.needPoll) {
                 throw new ApiException(String.format("[Internal Error] the api[%s] is not an async API but" +
                         " the server returns 201 status code", action.getClass().getSimpleName()));
             }
 
-            Map body = gson.fromJson(response.body().toString(), LinkedHashMap.class);
+            Map body = gson.fromJson(response.body().string(), LinkedHashMap.class);
             String pollingUrl = (String) body.get(Constants.LOCATION);
             if (pollingUrl == null) {
                 throw new ApiException(String.format("Internal Error] the api[%s] is an async API but the server" +
@@ -177,9 +177,9 @@ public class ZSClient {
 
         private void asyncPollResult(final String url) {
             final long current = System.currentTimeMillis();
-            final Long timeout = (Long)action.getParameterValue("timeout");
+            final Long timeout = (Long)action.getParameterValue("timeout", false);
             final long expiredTime = current + (timeout == null ? TimeUnit.HOURS.toMillis(3) : timeout);
-            final Long i = (Long) action.getParameterValue("pollingInterval");
+            final Long i = (Long) action.getParameterValue("pollingInterval", false);
 
             final Object sessionId = action.getParameterValue(Constants.SESSION_ID);
             final Timer timer = new Timer();
@@ -203,15 +203,16 @@ public class ZSClient {
 
                     try {
                         Response response = http.newCall(req).execute();
-                        if (!response.isSuccessful()) {
-                            done(httpError(response.code(), response.body().toString()));
+                        if (response.code() != 200 && response.code() != 503 && response.code() != 202) {
+                            done(httpError(response.code(), response.body().string()));
                             return;
                         }
 
-                        // 200 means the task has been completed
+                        // 200 means the task has been completed successfully,
+                        // or a 505 indicates a failure,
                         // otherwise a 202 returned means it is still
                         // in processing
-                        if (response.code() == 200) {
+                        if (response.code() == 200 || response.code() == 503) {
                             done(writeApiResult(response));
                             return;
                         }
@@ -245,9 +246,9 @@ public class ZSClient {
 
         private ApiResult syncPollResult(String url) {
             long current = System.currentTimeMillis();
-            Long timeout = (Long)action.getParameterValue("timeout");
+            Long timeout = (Long)action.getParameterValue("timeout", false);
             long expiredTime = current + (timeout == null ? TimeUnit.HOURS.toMillis(3) : timeout);
-            Long interval = (Long) action.getParameterValue("pollingInterval");
+            Long interval = (Long) action.getParameterValue("pollingInterval", false);
             interval = interval == null ? TimeUnit.SECONDS.toMillis(5) : interval;
 
             Object sessionId = action.getParameterValue(Constants.SESSION_ID);
@@ -261,14 +262,14 @@ public class ZSClient {
 
                 try {
                     Response response = http.newCall(req).execute();
-                    if (!response.isSuccessful()) {
-                        return httpError(response.code(), response.body().toString());
+                    if (response.code() != 200 && response.code() != 503 && response.code() != 202) {
+                        return httpError(response.code(), response.body().string());
                     }
 
                     // 200 means the task has been completed
                     // otherwise a 202 returned means it is still
                     // in processing
-                    if (response.code() == 200) {
+                    if (response.code() == 200 || response.code() == 503) {
                         return writeApiResult(response);
                     }
 
@@ -291,9 +292,16 @@ public class ZSClient {
             return res;
         }
 
-        private ApiResult writeApiResult(Response response) {
+        private ApiResult writeApiResult(Response response) throws IOException {
             ApiResult res = new ApiResult();
-            res.setResultString(response.body().toString());
+
+            if (response.code() == 202) {
+                res.setResultString(response.body().string());
+            } else if (response.code() == 503) {
+                res = gson.fromJson(response.body().string(), ApiResult.class);
+            } else {
+                throw new ApiException(String.format("unknown status code: %s", response.code()));
+            }
             return res;
         }
 

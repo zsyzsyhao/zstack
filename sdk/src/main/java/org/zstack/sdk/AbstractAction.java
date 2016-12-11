@@ -45,9 +45,17 @@ public abstract class AbstractAction {
     }
 
     Object getParameterValue(String name){
+        return getParameterValue(name, true);
+    }
+
+    Object getParameterValue(String name, boolean exceptionOnNotFound){
         Parameter p = parameterMap.get(name);
         if (p == null) {
-            throw new ApiException(String.format("no such parameter[%s]", name));
+            if (exceptionOnNotFound) {
+                throw new ApiException(String.format("no such parameter[%s]", name));
+            } else {
+                return null;
+            }
         }
 
         try {

@@ -1,12 +1,24 @@
 #!/bin/sh
 
 usage() {
-    echo "usage:$0 [deploydb|deploy|xml-java-schema|premium]"
+    echo "usage:$0 [deploydb|deploy|xml-java-schema|premium|sdk]"
+}
+
+sdk() {
+    set -u
+    rm -rf ~/zstack-sdk/java
+    cd test
+    mvn test -Dtest=TestGenerateSDK
+    cd - > /dev/null
+    yes | cp ~/zstack-sdk/java/* sdk/src/main/java/org/zstack/sdk/
+    set +u
 }
 
 run_profile() {
     if test x$1 = x'premium'; then
         mvn -Dmaven.test.skip=true -P premium clean install
+    elif test x$1 = x'sdk'; then
+        sdk
     else
         mvn -pl build -P $1 exec:exec -D$1
     fi

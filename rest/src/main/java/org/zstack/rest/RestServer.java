@@ -1,6 +1,8 @@
 package org.zstack.rest;
 
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.reflections.Reflections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -30,11 +32,15 @@ import org.zstack.utils.GroovyUtils;
 import org.zstack.utils.Utils;
 import org.zstack.utils.gson.JSONObjectUtil;
 import org.zstack.utils.logging.CLogger;
+import org.zstack.utils.path.PathUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URLDecoder;
 import java.util.*;
 
 /**
@@ -53,17 +59,26 @@ public class RestServer implements Component, CloudBusEventListener {
     private static final String ASYNC_JOB_PATH_PATTERN = String.format("%s/%s/{uuid}", RestConstants.API_VERSION, RestConstants.ASYNC_JOB_PATH);
 
     public static void generateJavaSdk() {
+        String path = PathUtil.join(System.getProperty("user.home"), "zstack-sdk/java");
+        File folder = new File(path);
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+
         try {
             Class clz = GroovyUtils.getClass("scripts/SdkApiTemplate.groovy", RestServer.class.getClassLoader());
             JavaSdkTemplate tmp = (JavaSdkTemplate) clz.getConstructor(Class.class).newInstance(APICreateZoneMsg.class);
             List<SdkFile> files = tmp.generate();
             for (SdkFile f : files) {
-                logger.debug(String.format("\n%s", f.getContent()));
+                String fpath = PathUtil.join(path, f.getFileName());
+                FileUtils.writeStringToFile(new File(fpath), f.getContent());
             }
 
             tmp = GroovyUtils.loadClass("scripts/SdkDataStructureGenerator.groovy", RestServer.class.getClassLoader());
             for (SdkFile f : tmp.generate()) {
-                logger.debug(String.format("\n%s", f.getContent()));
+                //logger.debug(String.format("\n%s", f.getContent()));
+                String fpath = PathUtil.join(path, f.getFileName());
+                FileUtils.writeStringToFile(new File(fpath), f.getContent());
             }
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
@@ -186,14 +201,28 @@ public class RestServer implements Component, CloudBusEventListener {
         }
     }
 
+    private void sendError(int statusCode, String body, HttpServletResponse rsp) throws IOException {
+        rsp.setStatus(statusCode);
+        rsp.getWriter().write(body);
+    }
+
+    private String getDecodedUrl(HttpServletRequest req) {
+        try {
+            return URLDecoder.decode(req.getRequestURI(), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new CloudRuntimeException(e);
+        }
+    }
+
     void handle(HttpServletRequest req, HttpServletResponse rsp) throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        if (matcher.match(ASYNC_JOB_PATH_PATTERN, req.getRequestURI())) {
+        String path = getDecodedUrl(req);
+
+        if (matcher.match(ASYNC_JOB_PATH_PATTERN, path)) {
             handleJobQuery(req, rsp);
             return;
         }
 
         HttpEntity<String> entity = toHttpEntity(req);
-        String path = req.getRequestURI();
 
         Object api = apis.get(path);
         if (api == null) {
@@ -206,7 +235,7 @@ public class RestServer implements Component, CloudBusEventListener {
         }
 
         if (api == null) {
-            rsp.sendError(HttpStatus.NOT_FOUND.value(), String.format("no api mapping to %s", path));
+            sendError(HttpStatus.NOT_FOUND.value(), String.format("no api mapping to %s", path), rsp);
             return;
         }
 
@@ -217,37 +246,43 @@ public class RestServer implements Component, CloudBusEventListener {
                 handleNonUniqueApi((Collection)api, entity, req, rsp);
             }
         } catch (RestException e) {
-            rsp.sendError(e.statusCode, e.error);
+            sendError(e.statusCode, e.error, rsp);
         } catch (Exception e) {
             logger.warn(String.format("failed to handle API to %s", path), e);
-            rsp.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage());
+            sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), rsp);
         }
     }
 
     private void handleJobQuery(HttpServletRequest req, HttpServletResponse rsp) throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (!req.getMethod().equals(HttpMethod.GET.name())) {
-            rsp.sendError(HttpStatus.METHOD_NOT_ALLOWED.value(), "only GET method is allowed for querying job status");
+            sendError(HttpStatus.METHOD_NOT_ALLOWED.value(), "only GET method is allowed for querying job status", rsp);
             return;
         }
 
-        Map<String, String> vars = matcher.extractUriTemplateVariables(ASYNC_JOB_PATH_PATTERN, req.getRequestURI());
+        Map<String, String> vars = matcher.extractUriTemplateVariables(ASYNC_JOB_PATH_PATTERN, getDecodedUrl(req));
         String uuid = vars.get("uuid");
         AsyncRestQueryResult ret = asyncStore.query(uuid);
 
         if (ret.getState() == AsyncRestState.expired) {
-            rsp.sendError(HttpStatus.NOT_FOUND.value(), "the job has been expired");
+            sendError(HttpStatus.NOT_FOUND.value(), "the job has been expired", rsp);
             return;
         }
 
         ApiResponse response = new ApiResponse();
+
         if (ret.getState() == AsyncRestState.processing) {
             sendResponse(HttpStatus.ACCEPTED.value(), response, rsp);
-        } else {
-            if (ret.getResult() != null) {
-                writeResponse(response, responseAnnotationByClass.get(ret.getResult().getClass()), ret.getResult());
-            }
+            return;
+        }
 
+        // task is done
+        APIEvent evt = ret.getResult();
+        if (evt.isSuccess()) {
+            writeResponse(response, responseAnnotationByClass.get(evt.getClass()), ret.getResult());
             sendResponse(HttpStatus.OK.value(), response, rsp);
+        } else {
+            response.setError(evt.getErrorCode());
+            sendResponse(HttpStatus.SERVICE_UNAVAILABLE.value(), response, rsp);
         }
     }
 
@@ -262,7 +297,7 @@ public class RestServer implements Component, CloudBusEventListener {
         Optional<Api> o = apis.stream().filter(a -> m.containsKey(((Api)a).requestAnnotation.actionName())).findAny();
         if (!o.isPresent()) {
             throw new RestException(HttpStatus.BAD_REQUEST.value(), String.format("the body doesn't contain any action mapping" +
-                    " to the URL[%s]", req.getRequestURI()));
+                    " to the URL[%s]", getDecodedUrl(req)));
         }
 
         Api api = o.get();
@@ -285,7 +320,7 @@ public class RestServer implements Component, CloudBusEventListener {
             sessionId = auth.replaceFirst("OAuth", "").trim();
         }
 
-        Map<String, String> vars = matcher.extractUriTemplateVariables(api.path, req.getRequestURI());
+        Map<String, String> vars = matcher.extractUriTemplateVariables(api.path, getDecodedUrl(req));
         Object parameter = body.get(parameterName);
 
         APIMessage msg;
@@ -344,7 +379,7 @@ public class RestServer implements Component, CloudBusEventListener {
 
             if (!reply.isSuccess()) {
                 response.setError(reply.getError());
-                rsp.sendError(HttpStatus.SERVICE_UNAVAILABLE.value(), JSONObjectUtil.toJsonString(response));
+                sendError(HttpStatus.SERVICE_UNAVAILABLE.value(), JSONObjectUtil.toJsonString(response), rsp);
                 return;
             }
 
@@ -358,7 +393,7 @@ public class RestServer implements Component, CloudBusEventListener {
             logger.warn("unhandled error", t);
 
             try {
-                rsp.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), t.getMessage());
+                sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), t.getMessage(), rsp);
             } catch (IOException e) {
                 logger.warn("unhandled IO error happened", e);
             }
