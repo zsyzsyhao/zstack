@@ -61,6 +61,10 @@ public class RestServer implements Component, CloudBusEventListener {
                 logger.debug(String.format("\n%s", f.getContent()));
             }
 
+            tmp = GroovyUtils.loadClass("scripts/SdkDataStructureGenerator.groovy", RestServer.class.getClassLoader());
+            for (SdkFile f : tmp.generate()) {
+                logger.debug(String.format("\n%s", f.getContent()));
+            }
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
             throw new CloudRuntimeException(e);

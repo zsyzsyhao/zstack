@@ -11,6 +11,7 @@ import org.zstack.header.rest.RestResponse
 import org.zstack.rest.sdk.JavaSdkTemplate
 import org.zstack.rest.sdk.SdkFile
 import org.zstack.utils.FieldUtils
+import org.zstack.utils.TypeUtils
 
 import java.lang.reflect.Field
 
@@ -18,18 +19,12 @@ import java.lang.reflect.Field
  * Created by xing5 on 2016/12/9.
  */
 class SdkApiTemplate implements JavaSdkTemplate {
-    static Map<String, SdkFile> generatedFiles = [:]
-
     Class apiMessageClass
     RestRequest requestAnnotation
-    RestResponse responseAnnotation
-    Class responseClass
 
     SdkApiTemplate(Class apiMessageClass) {
         this.apiMessageClass = apiMessageClass
         this.requestAnnotation = apiMessageClass.getAnnotation(RestRequest.class)
-        responseClass = requestAnnotation.responseClass()
-        responseAnnotation = responseClass.getAnnotation(RestResponse.class)
     }
 
     def normalizeApiName() {
@@ -139,50 +134,8 @@ ${generateMethods()}
         return f
     }
 
-    def generateResultClasses() {
-        def m = [:]
-
-        if (!responseAnnotation.mappingAllTo().isEmpty()) {
-            m[responseAnnotation.mappingAllTo()] = responseAnnotation.mappingAllTo()
-            return generateClass("${normalizeApiName()}Result".toString(), m, responseClass)
-        } else {
-            for (String mf : responseAnnotation.mappingFields()) {
-                def mfs = mf.split("=")
-                m[mfs[0].trim()] = mfs[1].trim()
-            }
-
-            return generateClass("${normalizeApiName()}Result".toString(), m, responseClass)
-        }
-    }
-
-    def generateClass(String className, Map<String, String> fieldMapping, Class sourceClass) {
-        if (generatedFiles.containsKey(className)) {
-            return [generatedFiles[className]]
-        }
-
-        def newFields = []
-        fieldMapping.each { k, v ->
-            Field sourceField = sourceClass.getField(v)
-            if (sourceField.type.name.startsWith("java.")) {
-                if (Collection.class.isAssignableFrom(sourceField.type)) {
-
-                } else if (Map.class.isAssignableFrom(sourceField.type)) {
-
-                } else {
-                    // normal java type
-                    newFields.add("""\
-    public ${sourceField.type.name} ${k};
-""")
-                }
-            }
-        }
-    }
-
     @Override
     List<SdkFile> generate() {
-        def files = []
-        files.add(generateAction())
-
-        return files
+        return [generateAction()]
     }
 }
