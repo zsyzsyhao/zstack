@@ -3,6 +3,8 @@ package org.zstack.rest;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -10,11 +12,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.WebUtils;
 import org.zstack.core.Platform;
 import org.zstack.core.cloudbus.CloudBus;
 import org.zstack.core.cloudbus.CloudBusCallBack;
 import org.zstack.core.cloudbus.CloudBusEventListener;
+import org.zstack.core.logging.Log;
 import org.zstack.header.Component;
 import org.zstack.header.apimediator.ApiMediatorConstant;
 import org.zstack.header.exception.CloudRuntimeException;
@@ -46,8 +54,10 @@ import java.util.*;
 /**
  * Created by xing5 on 2016/12/7.
  */
-public class RestServer implements Component, CloudBusEventListener {
+public class RestServer implements Component, CloudBusEventListener, HandlerInterceptor {
     private static final CLogger logger = Utils.getLogger(RestServer.class);
+    private static final Logger requestLogger = LogManager.getLogger("api.request");
+    private static final Logger responseLogger = LogManager.getLogger("api.response");
 
     @Autowired
     private CloudBus bus;
@@ -93,6 +103,44 @@ public class RestServer implements Component, CloudBusEventListener {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean preHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o) throws Exception {
+        if (requestLogger.isTraceEnabled()) {
+            HttpServletRequest req = new ContentCachingRequestWrapper(httpServletRequest);
+            StringBuilder sb = new StringBuilder(String.format("request from %s (to %s), ", req.getRemoteHost(), req.getRequestURI()));
+            HttpEntity<String> entity = toHttpEntity(req);
+            sb.append(String.format(" Headers: %s,", entity.getHeaders()));
+            sb.append(String.format(" Body: %s", entity.getBody()));
+
+            requestLogger.trace(sb.toString());
+        }
+
+        return true;
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, ModelAndView modelAndView) throws Exception {
+
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) throws Exception {
+        if (requestLogger.isTraceEnabled()) {
+            ContentCachingResponseWrapper rsp = WebUtils.getNativeResponse(httpServletResponse, ContentCachingResponseWrapper.class);
+            StringBuilder sb = new StringBuilder(String.format("response to %s (%s),", httpServletRequest.getRemoteHost(), httpServletRequest.getRequestURI()));
+            sb.append(String.format(" Status Code: %s,", rsp.getStatusCode()));
+
+            byte[] buf = rsp.getContentAsByteArray();
+            if (buf.length > 0) {
+                String body = new String(buf, 0, buf.length, rsp.getCharacterEncoding());
+                rsp.copyBodyToResponse();
+                sb.append(String.format(" Body: %s", body));
+            }
+
+            requestLogger.trace(sb.toString());
+        }
     }
 
     class Api {

@@ -34,6 +34,28 @@
             <DefaultRolloverStrategy max="20"/>
         </RollingFile>
 
+        <RollingFile name="ApiRequestLogger" fileName="zstack-api-request.log"
+            filePattern="zstack-api-request-%d{yyyy-MM-dd}-%i.log" >
+            <PatternLayout>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{1}] (%t) %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="150 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingFile>
+
+        <RollingFile name="ApiReponseLogger" fileName="zstack-api-response.log"
+            filePattern="zstack-api-response-%d{yyyy-MM-dd}-%i.log" >
+            <PatternLayout>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{1}] (%t) %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="150 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingFile>
+
         <Async name="Async" ignoreExceptions="false" bufferSize="512">
             <AppenderRef ref="RollingFile" />
         </Async>
@@ -52,6 +74,14 @@
 
         <Logger name="org.zstack.storage.primary.DiskCapacityTracerDetails" level="DEBUG" additivity="TRUE">
             <AppenderRef ref="DiskCapacityLoggerDetails" level="DEBUG" />
+        </Logger>
+
+        <Logger name="api.request" level="TRACE" additivity="TRUE">
+            <AppenderRef ref="ApiRequestLogger" level="DEBUG" />
+        </Logger>
+
+        <Logger name="api.response" level="TRACE" additivity="TRUE">
+            <AppenderRef ref="ApiReponseLogger" level="DEBUG" />
         </Logger>
 
         <Logger name="org.zstack" level="DEBUG" />
