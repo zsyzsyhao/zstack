@@ -10,7 +10,6 @@ import java.util.HashMap;
 public class ApiResponse extends HashMap {
     private String location;
     private ErrorCode error;
-    private AsyncRestState state;
     private Object result;
 
     public String getLocation() {
@@ -29,15 +28,6 @@ public class ApiResponse extends HashMap {
     public void setError(ErrorCode error) {
         this.error = error;
         put("error", error);
-    }
-
-    public AsyncRestState getState() {
-        return state;
-    }
-
-    public void setState(AsyncRestState state) {
-        this.state = state;
-        put("state", state);
     }
 
     public Object getResult() {

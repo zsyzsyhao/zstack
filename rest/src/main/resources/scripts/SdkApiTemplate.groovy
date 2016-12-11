@@ -22,9 +22,18 @@ class SdkApiTemplate implements JavaSdkTemplate {
     Class apiMessageClass
     RestRequest requestAnnotation
 
+    String resultClassName
+
     SdkApiTemplate(Class apiMessageClass) {
         this.apiMessageClass = apiMessageClass
         this.requestAnnotation = apiMessageClass.getAnnotation(RestRequest.class)
+
+        resultClassName = requestAnnotation.responseClass().simpleName
+        resultClassName = StringUtils.removeStart(resultClassName, "API")
+        resultClassName = StringUtils.removeEnd(resultClassName, "Event")
+        resultClassName = StringUtils.removeEnd(resultClassName, "Reply")
+        resultClassName = StringUtils.capitalize(resultClassName)
+        resultClassName = "${resultClassName}Result"
     }
 
     def normalizeApiName() {
@@ -101,10 +110,41 @@ class SdkApiTemplate implements JavaSdkTemplate {
     def generateMethods() {
         def ms = []
         ms.add("""\
-    public ApiResult call() {
-        return ZSClient.call(this);
+    public Result call() {
+        ApiResult res = ZSClient.call(this);
+        Result ret = new Result();
+        if (res.error != null) {
+            ret.error = res.error;
+            return ret;
+        }
+        
+        ${resultClassName} value = res.getResult(${resultClassName}.class);
+        ret.value = value == null ? new ${resultClassName} : value;
+        return ret;
     }
 """)
+
+        ms.add("""\
+    public Result call(Completion<Result> completion) {
+        ZSClient.call(this, new InternalCompletion() {
+            @Override
+            void complete(ApiResult res) {
+                ApiResult res = ZSClient.call(this);
+                Result ret = new Result();
+                if (res.error != null) {
+                    ret.error = res.error;
+                    completion.complete(ret);
+                    return;
+                }
+                
+                ${resultClassName} value = res.getResult(${resultClassName}.class);
+                ret.value = value == null ? new ${resultClassName} : value;
+                completion.complete(ret);
+            }
+        });
+    }
+""")
+
         ms.add("""\
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
@@ -125,6 +165,12 @@ class SdkApiTemplate implements JavaSdkTemplate {
         f.content = """package org.zstack.sdk;
 
 public class ${generateClassName()} extends AbstractAction {
+
+    public static class Result {
+        public ErrorCode error;
+        public ${resultClassName} value;
+    }
+
 ${generateFields()}
 
 ${generateMethods()}

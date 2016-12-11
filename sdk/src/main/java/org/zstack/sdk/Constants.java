@@ -15,4 +15,5 @@ interface Constants {
 
     String HTTP_ERROR = "sdk.1000";
     String POLLING_TIMEOUT_ERROR = "sdk.1001";
+    String INTERNAL_ERROR = "sdk.1002";
 }

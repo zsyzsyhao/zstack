@@ -240,22 +240,20 @@ public class RestServer implements Component, CloudBusEventListener {
         }
 
         ApiResponse response = new ApiResponse();
-        response.setState(ret.getState());
-        if (ret.getResult() != null) {
-            writeResponse(response, responseAnnotationByClass.get(ret.getResult().getClass()), ret.getResult());
-        }
+        if (ret.getState() == AsyncRestState.processing) {
+            sendResponse(HttpStatus.ACCEPTED.value(), response, rsp);
+        } else {
+            if (ret.getResult() != null) {
+                writeResponse(response, responseAnnotationByClass.get(ret.getResult().getClass()), ret.getResult());
+            }
 
-        sendResponse(response, rsp);
+            sendResponse(HttpStatus.OK.value(), response, rsp);
+        }
     }
 
-    private void sendResponse(ApiResponse response, HttpServletResponse rsp) throws IOException {
-        if (response.isEmpty()) {
-            rsp.setStatus(HttpStatus.NO_CONTENT.value());
-            rsp.getWriter().write("");
-        } else {
-            rsp.setStatus(HttpStatus.OK.value());
-            rsp.getWriter().write(JSONObjectUtil.toJsonString(response));
-        }
+    private void sendResponse(int statusCode, ApiResponse response, HttpServletResponse rsp) throws IOException {
+        rsp.setStatus(statusCode);
+        rsp.getWriter().write(response.isEmpty() ? "" : JSONObjectUtil.toJsonString(response));
     }
 
     private void handleNonUniqueApi(Collection apis, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IOException {
@@ -353,7 +351,7 @@ public class RestServer implements Component, CloudBusEventListener {
             // the api succeeded
 
             writeResponse(response, responseAnnotationByClass.get(api.apiResponseClass), reply);
-            sendResponse(response, rsp);
+            sendResponse(HttpStatus.OK.value(), response, rsp);
         } catch (IOException e) {
             logger.warn("unhandled IO error happened", e);
         } catch (Throwable t) {

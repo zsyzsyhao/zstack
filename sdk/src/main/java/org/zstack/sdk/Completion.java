@@ -1,8 +1,8 @@
 package org.zstack.sdk;
 
 /**
- * Created by xing5 on 2016/12/10.
+ * Created by xing5 on 2016/12/11.
  */
-public interface Completion {
-    void complete(ApiResult result);
+public interface Completion<T> {
+    void complete(T ret);
 }

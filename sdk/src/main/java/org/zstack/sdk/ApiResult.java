@@ -5,21 +5,21 @@ package org.zstack.sdk;
  */
 public class ApiResult<T> {
     ErrorCode error;
-    T result;
+    String resultString;
 
     public ErrorCode getError() {
         return error;
     }
 
-    public void setError(ErrorCode error) {
+    void setError(ErrorCode error) {
         this.error = error;
     }
 
-    public T getResult() {
-        return result;
+    void setResultString(String resultString) {
+        this.resultString = resultString;
     }
 
-    public void setResult(T result) {
-        this.result = result;
+    public T getResult(Class<T> clz) {
+        return resultString == null || resultString.isEmpty() ? null : ZSClient.gson.fromJson(resultString, clz);
     }
 }

@@ -37,7 +37,7 @@ public class ZSClient {
     static class Api {
         AbstractAction action;
         RestInfo info;
-        Completion completion;
+        InternalCompletion completion;
 
         Api(AbstractAction action) {
             this.action = action;
@@ -75,7 +75,7 @@ public class ZSClient {
             return urlVars;
         }
 
-        void call(Completion completion) {
+        void call(InternalCompletion completion) {
             this.completion = completion;
             doCall();
         }
@@ -142,7 +142,7 @@ public class ZSClient {
 
                 if (response.code() == 200 || response.code() == 204) {
                     return writeApiResult(response);
-                } else if (response.code() == 201) {
+                } else if (response.code() == 202) {
                     return pollResult(response);
                 } else {
                     throw new ApiException(String.format("[Internal Error] the server returns an unknown status code[%s]", response.code()));
@@ -170,12 +170,77 @@ public class ZSClient {
                 return syncPollResult(pollingUrl);
             } else {
                 // async polling
-                asyncPollResult(response);
+                asyncPollResult(pollingUrl);
                 return null;
             }
         }
 
-        private void asyncPollResult(Response response) {
+        private void asyncPollResult(final String url) {
+            final long current = System.currentTimeMillis();
+            final Long timeout = (Long)action.getParameterValue("timeout");
+            final long expiredTime = current + (timeout == null ? TimeUnit.HOURS.toMillis(3) : timeout);
+            final Long i = (Long) action.getParameterValue("pollingInterval");
+
+            final Object sessionId = action.getParameterValue(Constants.SESSION_ID);
+            final Timer timer = new Timer();
+
+            timer.schedule(new TimerTask() {
+                long count = current;
+                long interval = i == null ? TimeUnit.SECONDS.toMillis(5) : i;
+
+                private void done(ApiResult res) {
+                    completion.complete(res);
+                    timer.cancel();
+                }
+
+                @Override
+                public void run() {
+                    Request req = new Request.Builder()
+                            .url(url)
+                            .addHeader(Constants.HEADER_AUTHORIZATION, String.format("%s %s", Constants.OAUTH, sessionId))
+                            .get()
+                            .build();
+
+                    try {
+                        Response response = http.newCall(req).execute();
+                        if (!response.isSuccessful()) {
+                            done(httpError(response.code(), response.body().toString()));
+                            return;
+                        }
+
+                        // 200 means the task has been completed
+                        // otherwise a 202 returned means it is still
+                        // in processing
+                        if (response.code() == 200) {
+                            done(writeApiResult(response));
+                            return;
+                        }
+
+                        count += interval;
+                        if (count >= expiredTime) {
+                            ApiResult res = new ApiResult();
+                            res.error = new ErrorCode(
+                                    Constants.POLLING_TIMEOUT_ERROR,
+                                    "timeout of polling async API result",
+                                    String.format("polling result of api[%s] timeout after %s ms", action.getClass().getSimpleName(), timeout)
+                            );
+
+                            done(res);
+                        }
+                    } catch (Throwable e) {
+                        //TODO: logging
+
+                        ApiResult res = new ApiResult();
+                        res.error = new ErrorCode(
+                                Constants.INTERNAL_ERROR,
+                                "an internal error happened",
+                                e.getMessage()
+                        );
+
+                        done(res);
+                    }
+                }
+            }, 0, i);
         }
 
         private ApiResult syncPollResult(String url) {
@@ -200,14 +265,10 @@ public class ZSClient {
                         return httpError(response.code(), response.body().toString());
                     }
 
-                    if (response.code() == 204) {
-                        throw new ApiException(String.format("[Internal Error] the server returns 204 code for result polling" +
-                                " of the api[%s]", action.getClass().getSimpleName()));
-                    }
-
-                    Map rsp = gson.fromJson(response.body().toString(), LinkedHashMap.class);
-                    String state = (String) rsp.get("state");
-                    if ("done".equals(state)) {
+                    // 200 means the task has been completed
+                    // otherwise a 202 returned means it is still
+                    // in processing
+                    if (response.code() == 200) {
                         return writeApiResult(response);
                     }
 
@@ -232,14 +293,8 @@ public class ZSClient {
 
         private ApiResult writeApiResult(Response response) {
             ApiResult res = new ApiResult();
-            if (response.body().toString().isEmpty()) {
-                // no body
-                return res;
-            }
-
-            //TODO
-
-            return null;
+            res.setResultString(response.body().toString());
+            return res;
         }
 
         private ApiResult httpError(int code, String details) {
@@ -263,7 +318,7 @@ public class ZSClient {
         }
     }
 
-    static void call(AbstractAction action, Completion completion) {
+    static void call(AbstractAction action, InternalCompletion completion) {
         errorIfNotConfigured();
         new Api(action).call(completion);
     }
