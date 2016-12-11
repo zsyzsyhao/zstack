@@ -9,8 +9,8 @@ import java.io.InputStream;
 public class GroovyUtils {
     public static <T> T loadClass(String scriptPath, ClassLoader parent) {
         try {
-            Object obj = getClass(scriptPath, parent);
-            return (T)obj;
+            Class clz = getClass(scriptPath, parent);
+            return (T)clz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

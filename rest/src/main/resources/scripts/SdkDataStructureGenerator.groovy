@@ -9,6 +9,8 @@ import org.zstack.header.rest.RestResponse
 import org.zstack.rest.sdk.JavaSdkTemplate
 import org.zstack.rest.sdk.SdkFile
 import org.zstack.utils.FieldUtils
+import org.zstack.utils.Utils
+import org.zstack.utils.logging.CLogger
 
 import java.lang.reflect.Field
 
@@ -16,6 +18,8 @@ import java.lang.reflect.Field
  * Created by xing5 on 2016/12/11.
  */
 class SdkDataStructureGenerator implements JavaSdkTemplate {
+    CLogger logger = Utils.getLogger(SdkDataStructureGenerator.class)
+
     Set<Class> responseClasses
     Map<Class, SdkFile> sdkFileMap = [:]
     Set<Class> laterResolvedClasses = []
@@ -46,6 +50,8 @@ class SdkDataStructureGenerator implements JavaSdkTemplate {
             resolveClass(clz)
             laterResolvedClasses.remove(clz)
         }
+
+        resolveAllClasses()
     }
 
     def resolveClass(Class clz) {
@@ -94,30 +100,23 @@ ${output.join("\n")}
     }
 
     def generateResponseClass(Class responseClass) {
+        logger.debug("generating class: ${responseClass.name}")
+
         RestResponse at = responseClass.getAnnotation(RestResponse.class)
 
         def fields = [:]
 
         def addToFields = { String fname, Field f ->
             if (isZStackClass(f.type)) {
-                def fs = f.type.getDeclaredFields()
-                fs.each { ff ->
-                    if (!ff.isAnnotationPresent(APINoSee.class)) {
-                        fields[f.name] = ff
-                    }
-                }
-
-                if (!Object.class.isAssignableFrom(f.type.superclass)) {
-                    addToLaterResolvedClassesIfNeed(f.type.superclass)
-                }
-
+                addToLaterResolvedClassesIfNeed(f.type)
+                fields[fname] = f
             } else {
                 fields[fname] = f
             }
         }
 
         if (!at.mappingAllTo().isEmpty()) {
-            Field f = responseClass.getField(at.mappingAllTo())
+            Field f = responseClass.getDeclaredField(at.mappingAllTo())
             addToFields(at.mappingAllTo(), f)
         } else {
             at.mappingFields().each { s ->
@@ -125,7 +124,7 @@ ${output.join("\n")}
                 def dst = ss[0].trim()
                 def src = ss[1].trim()
 
-                Field f = responseClass.getField(src)
+                Field f = responseClass.getDeclaredField(src)
                 addToFields(dst, f)
             }
         }
@@ -136,9 +135,9 @@ ${output.join("\n")}
         }
 
         def className = responseClass.simpleName
-        className = StringUtils.stripStart(className, "API")
-        className = StringUtils.stripEnd(className, "Event")
-        className = StringUtils.stripEnd(className, "Reply")
+        className = StringUtils.removeStart(className, "API")
+        className = StringUtils.removeEnd(className, "Event")
+        className = StringUtils.removeEnd(className, "Reply")
         className = StringUtils.capitalize(className)
         className = "${className}Result"
 
@@ -173,11 +172,11 @@ ${output.join("\n")}
                 }
 
                 return """\
-    public ${field.type.simpleName}<${genericType.simpleName}> ${fname};
+    public ${field.type.name}<${genericType.simpleName}> ${fname};
 """
             } else {
                 return """\
-    public ${field.type.simpleName} ${fname};
+    public ${field.type.name} ${fname};
 """
             }
         } else if (Map.class.isAssignableFrom(field.type)) {
@@ -189,16 +188,16 @@ ${output.join("\n")}
                 }
 
                 return """\
-    public ${field.type.simpleName}<String, ${genericType.simpleName}> ${fname};
+    public ${field.type.name}<String, ${genericType.simpleName}> ${fname};
 """
             } else {
                 return """\
-    public ${field.type.simpleName} ${fname};
+    public ${field.type.name} ${fname};
 """
             }
         } else {
             return """\
-    public ${field.type.simpleName} ${fname};
+    public ${field.type.name} ${fname};
 """
         }
     }

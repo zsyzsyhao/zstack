@@ -28,8 +28,8 @@ class SdkApiTemplate implements JavaSdkTemplate {
     }
 
     def normalizeApiName() {
-        def name = StringUtils.stripStart(apiMessageClass.getSimpleName(), "API")
-        name = StringUtils.stripEnd(name, "Msg")
+        def name = StringUtils.removeStart(apiMessageClass.getSimpleName(), "API")
+        name = StringUtils.removeEnd(name, "Msg")
         return StringUtils.capitalize(name)
     }
 
@@ -107,12 +107,12 @@ class SdkApiTemplate implements JavaSdkTemplate {
 """)
         ms.add("""\
     RestInfo getRestInfo() {
-        RestInfo info = new RestInfo()
-        info.httpMethod = ${requestAnnotation.method().name()}
-        info.path = ${requestAnnotation.path()}
-        info.needSession = ${apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)}
-        info.needPoll = ${!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)}
-        return info
+        RestInfo info = new RestInfo();
+        info.httpMethod = "${requestAnnotation.method().name()}";
+        info.path = "${requestAnnotation.path()}";
+        info.needSession = ${apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)};
+        info.needPoll = ${!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)};
+        return info;
     }
 """)
 
