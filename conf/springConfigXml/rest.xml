@@ -24,12 +24,4 @@
     		<zstack:extension interface="org.zstack.header.Component"/>
         </zstack:plugin>
     </bean>
-
-    <mvc:interceptors>
-    	<mvc:interceptor>
-		<mvc:mapping path="/**" />
-    		<bean class="org.zstack.rest.ApiLogger" />
-    	</mvc:interceptor>
-    </mvc:interceptors>
-
 </beans>

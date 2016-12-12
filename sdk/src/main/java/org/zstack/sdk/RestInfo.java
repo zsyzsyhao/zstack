@@ -8,4 +8,5 @@ class RestInfo {
     String path;
     boolean needSession;
     boolean needPoll;
+    String parameterName;
 }

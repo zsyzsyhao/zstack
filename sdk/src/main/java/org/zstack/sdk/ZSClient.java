@@ -87,8 +87,11 @@ public class ZSClient {
                     .scheme("http")
                     .host(config.getHostname())
                     .port(config.getPort())
-                    .addPathSegment("/v1")
-                    .addPathSegment(info.path)
+                    // HttpUrl will add an extra / to the path segment
+                    // so /v1/zones will become //v1//zones
+                    // we remove the extra / here
+                    .addPathSegment("/v1".replaceFirst("/", ""))
+                    .addPathSegment(info.path.replaceFirst("/", ""))
                     .build();
 
             String urlstr;
@@ -110,7 +113,7 @@ public class ZSClient {
                 urlstr = url.url().toString();
             }
 
-            Map<String, Object> body = new HashMap<>();
+            final Map<String, Object> params = new HashMap<>();
             for (String pname : action.getAllParameterNames()) {
                 if (varNames.contains(pname) || Constants.SESSION_ID.equals(pname)) {
                     // the field is set in URL variables
@@ -119,13 +122,15 @@ public class ZSClient {
 
                 Object value = action.getParameterValue(pname);
                 if (value != null) {
-                    body.put(pname, value);
+                    params.put(pname, value);
                 }
             }
 
+            Map m = new HashMap();
+            m.put(info.parameterName, params);
+
             Request.Builder reqBuilder = new Request.Builder();
-            reqBuilder.url(urlstr)
-                    .method(info.httpMethod, RequestBody.create(Constants.JSON, gson.toJson(body)));
+            reqBuilder.url(urlstr).method(info.httpMethod, RequestBody.create(Constants.JSON, gson.toJson(m)));
 
             if (info.needSession) {
                 Object sessionId = action.getParameterValue(Constants.SESSION_ID);
@@ -295,7 +300,7 @@ public class ZSClient {
         private ApiResult writeApiResult(Response response) throws IOException {
             ApiResult res = new ApiResult();
 
-            if (response.code() == 202) {
+            if (response.code() == 200) {
                 res.setResultString(response.body().string());
             } else if (response.code() == 503) {
                 res = gson.fromJson(response.body().string(), ApiResult.class);

@@ -151,6 +151,7 @@ class SdkApiTemplate implements JavaSdkTemplate {
         info.path = "${requestAnnotation.path()}";
         info.needSession = ${!apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)};
         info.needPoll = ${!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)};
+        info.parameterName = "${requestAnnotation.parameterName()}";
         return info;
     }
 """)

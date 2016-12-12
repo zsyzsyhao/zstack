@@ -2,7 +2,7 @@ package org.zstack.rest;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
@@ -12,17 +12,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.AntPathMatcher;
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.springframework.web.util.WebUtils;
 import org.zstack.core.Platform;
 import org.zstack.core.cloudbus.CloudBus;
 import org.zstack.core.cloudbus.CloudBusCallBack;
 import org.zstack.core.cloudbus.CloudBusEventListener;
-import org.zstack.core.logging.Log;
 import org.zstack.header.Component;
 import org.zstack.header.apimediator.ApiMediatorConstant;
 import org.zstack.header.exception.CloudRuntimeException;
@@ -44,6 +38,7 @@ import org.zstack.utils.path.PathUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -56,6 +51,8 @@ import java.util.*;
  */
 public class RestServer implements Component, CloudBusEventListener {
     private static final CLogger logger = Utils.getLogger(RestServer.class);
+    private static final Logger requestLogger = LogManager.getLogger("api.request");
+    private static ThreadLocal<RequestInfo> requestInfo = new ThreadLocal<>();
 
     @Autowired
     private CloudBus bus;
@@ -63,6 +60,22 @@ public class RestServer implements Component, CloudBusEventListener {
     private AsyncRestApiStore asyncStore;
     @Autowired
     private RESTFacade restf;
+
+    private static class RequestInfo {
+        HttpSession session;
+        String remoteHost;
+        String requestUrl;
+
+        public RequestInfo(HttpServletRequest req) {
+            session = req.getSession();
+            remoteHost = req.getRemoteHost();
+            try {
+                requestUrl = URLDecoder.decode(req.getRequestURI(), "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new CloudRuntimeException(e);
+            }
+        }
+    }
 
     private static final String ASYNC_JOB_PATH_PATTERN = String.format("%s/%s/{uuid}", RestConstants.API_VERSION, RestConstants.ASYNC_JOB_PATH);
 
@@ -189,11 +202,7 @@ public class RestServer implements Component, CloudBusEventListener {
 
     private HttpEntity<String> toHttpEntity(HttpServletRequest req) {
         try {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = req.getReader().readLine()) != null) {
-                sb.append(line);
-            }
+            String body = IOUtils.toString(req.getReader());
             req.getReader().close();
 
             HttpHeaders header = new HttpHeaders();
@@ -202,16 +211,27 @@ public class RestServer implements Component, CloudBusEventListener {
                 header.add(name, req.getHeader(name));
             }
 
-            return new HttpEntity<>(sb.toString(), header);
+            return new HttpEntity<>(body, header);
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
             throw new CloudRuntimeException(e);
         }
     }
 
-    private void sendError(int statusCode, String body, HttpServletResponse rsp) throws IOException {
+    private void sendResponse(int statusCode, String body, HttpServletResponse rsp) throws IOException {
+        if (requestLogger.isTraceEnabled()) {
+            RequestInfo info = requestInfo.get();
+
+            StringBuilder sb = new StringBuilder(String.format("[ID: %s] Response to %s (%s),", info.session.getId(),
+                    info.remoteHost, info.requestUrl));
+            sb.append(String.format(" Status Code: %s,", statusCode));
+            sb.append(String.format(" Body: %s", body));
+
+            requestLogger.trace(sb.toString());
+        }
+
         rsp.setStatus(statusCode);
-        rsp.getWriter().write(body);
+        rsp.getWriter().write(body == null ? "" : body);
     }
 
     private String getDecodedUrl(HttpServletRequest req) {
@@ -223,14 +243,24 @@ public class RestServer implements Component, CloudBusEventListener {
     }
 
     void handle(HttpServletRequest req, HttpServletResponse rsp) throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        requestInfo.set(new RequestInfo(req));
+
         String path = getDecodedUrl(req);
+        HttpEntity<String> entity = toHttpEntity(req);
+
+        if (requestLogger.isTraceEnabled()) {
+            StringBuilder sb = new StringBuilder(String.format("[ID: %s] Request from %s (to %s), ", req.getSession().getId(),
+                    req.getRemoteHost(), URLDecoder.decode(req.getRequestURI(), "UTF-8")));
+            sb.append(String.format(" Headers: %s,", JSONObjectUtil.toJsonString(entity.getHeaders())));
+            sb.append(String.format(" Body: %s", entity.getBody().isEmpty() ? null : entity.getBody()));
+
+            requestLogger.trace(sb.toString());
+        }
 
         if (matcher.match(ASYNC_JOB_PATH_PATTERN, path)) {
             handleJobQuery(req, rsp);
             return;
         }
-
-        HttpEntity<String> entity = toHttpEntity(req);
 
         Object api = apis.get(path);
         if (api == null) {
@@ -243,7 +273,7 @@ public class RestServer implements Component, CloudBusEventListener {
         }
 
         if (api == null) {
-            sendError(HttpStatus.NOT_FOUND.value(), String.format("no api mapping to %s", path), rsp);
+            sendResponse(HttpStatus.NOT_FOUND.value(), String.format("no api mapping to %s", path), rsp);
             return;
         }
 
@@ -254,16 +284,16 @@ public class RestServer implements Component, CloudBusEventListener {
                 handleNonUniqueApi((Collection)api, entity, req, rsp);
             }
         } catch (RestException e) {
-            sendError(e.statusCode, e.error, rsp);
+            sendResponse(e.statusCode, e.error, rsp);
         } catch (Exception e) {
             logger.warn(String.format("failed to handle API to %s", path), e);
-            sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), rsp);
+            sendResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), rsp);
         }
     }
 
     private void handleJobQuery(HttpServletRequest req, HttpServletResponse rsp) throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (!req.getMethod().equals(HttpMethod.GET.name())) {
-            sendError(HttpStatus.METHOD_NOT_ALLOWED.value(), "only GET method is allowed for querying job status", rsp);
+            sendResponse(HttpStatus.METHOD_NOT_ALLOWED.value(), "only GET method is allowed for querying job status", rsp);
             return;
         }
 
@@ -272,7 +302,7 @@ public class RestServer implements Component, CloudBusEventListener {
         AsyncRestQueryResult ret = asyncStore.query(uuid);
 
         if (ret.getState() == AsyncRestState.expired) {
-            sendError(HttpStatus.NOT_FOUND.value(), "the job has been expired", rsp);
+            sendResponse(HttpStatus.NOT_FOUND.value(), "the job has been expired", rsp);
             return;
         }
 
@@ -295,8 +325,7 @@ public class RestServer implements Component, CloudBusEventListener {
     }
 
     private void sendResponse(int statusCode, ApiResponse response, HttpServletResponse rsp) throws IOException {
-        rsp.setStatus(statusCode);
-        rsp.getWriter().write(response.isEmpty() ? "" : JSONObjectUtil.toJsonString(response));
+        sendResponse(statusCode, response.isEmpty() ? "" : JSONObjectUtil.toJsonString(response), rsp);
     }
 
     private void handleNonUniqueApi(Collection apis, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IOException {
@@ -309,7 +338,7 @@ public class RestServer implements Component, CloudBusEventListener {
         }
 
         Api api = o.get();
-        handleApi(api, m, api.requestAnnotation.actionName(), entity, req, rsp);
+        handleApi(api, m, api.requestAnnotation.parameterName(), entity, req, rsp);
     }
 
     private void handleApi(Api api, Map body, String parameterName, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, IOException {
@@ -387,7 +416,7 @@ public class RestServer implements Component, CloudBusEventListener {
 
             if (!reply.isSuccess()) {
                 response.setError(reply.getError());
-                sendError(HttpStatus.SERVICE_UNAVAILABLE.value(), JSONObjectUtil.toJsonString(response), rsp);
+                sendResponse(HttpStatus.SERVICE_UNAVAILABLE.value(), JSONObjectUtil.toJsonString(response), rsp);
                 return;
             }
 
@@ -401,7 +430,7 @@ public class RestServer implements Component, CloudBusEventListener {
             logger.warn("unhandled error", t);
 
             try {
-                sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), t.getMessage(), rsp);
+                sendResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), t.getMessage(), rsp);
             } catch (IOException e) {
                 logger.warn("unhandled IO error happened", e);
             }
@@ -428,8 +457,7 @@ public class RestServer implements Component, CloudBusEventListener {
 
             bus.send(msg);
 
-            rsp.setStatus(HttpStatus.ACCEPTED.value());
-            rsp.getWriter().write(JSONObjectUtil.toJsonString(response));
+            sendResponse(HttpStatus.ACCEPTED.value(), response, rsp);
         }
     }
 

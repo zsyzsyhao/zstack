@@ -343,11 +343,6 @@
                 <version>1.17</version>
             </dependency>
    	    <dependency>
-                <groupId>com.github.isrsal</groupId>
-                <artifactId>spring-mvc-logger</artifactId>
-                <version>0.2</version>
-            </dependency>
-   	    <dependency>
    	        <groupId>com.squareup.okhttp3</groupId>
    	        <artifactId>okhttp</artifactId>
    	        <version>3.5.0</version>
@@ -448,6 +443,8 @@
                 <module>console</module>
                 <module>tag</module>
                 <module>premium</module>
+                <module>rest</module>
+                <module>sdk</module>
             </modules>
         </profile>
 

@@ -47,16 +47,6 @@
         <dispatcher>FORWARD</dispatcher>
     </filter-mapping>
 
-    <filter>
-        <filter-name>loggingFilter</filter-name>
-        <filter-class>com.github.isrsal.logging.LoggingFilter</filter-class>
-    </filter>
-
-    <filter-mapping>
-        <filter-name>loggingFilter</filter-name>
-        <url-pattern>/*</url-pattern>
-    </filter-mapping>
-
     <!-- NOTE: this listener must be put as the first listener to execute, don't change the order !!! -->
     <listener>
         <listener-class>
