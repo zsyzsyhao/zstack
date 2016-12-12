@@ -1,3 +1,4 @@
+/*
 package org.zstack.header.vo;
 
 import org.apache.commons.codec.binary.Base64;
@@ -18,10 +19,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
+*/
 /**
  * Created by mingjian.deng on 16/11/1.
  * exec TestEncrypt can test this method
- */
+ *//*
+
 
 @Aspect
 @Component
@@ -37,6 +40,7 @@ public class EncryptMethod {
             parameters[0] = encrypt((String)parameters[0]);
             logger.debug(String.format("encrypted password is: %s", parameters[0]));
             joinPoint.proceed(parameters);
+
         }
     }
 
@@ -55,3 +59,4 @@ public class EncryptMethod {
         return new String(desBytes, "utf-8");
     }
 }
+*/
