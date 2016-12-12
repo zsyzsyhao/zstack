@@ -30,7 +30,7 @@ public class ZSClient {
         return config;
     }
 
-    public static void setConfig(ZSConfig c) {
+    public static void configure(ZSConfig c) {
         config = c;
     }
 
@@ -85,8 +85,8 @@ public class ZSClient {
 
             HttpUrl url = new HttpUrl.Builder()
                     .scheme("http")
-                    .host(config.getHostname())
-                    .port(config.getPort())
+                    .host(config.hostname)
+                    .port(config.port)
                     // HttpUrl will add an extra / to the path segment
                     // so /v1/zones will become //v1//zones
                     // we remove the extra / here
@@ -183,7 +183,7 @@ public class ZSClient {
         private void asyncPollResult(final String url) {
             final long current = System.currentTimeMillis();
             final Long timeout = (Long)action.getParameterValue("timeout", false);
-            final long expiredTime = current + (timeout == null ? TimeUnit.HOURS.toMillis(3) : timeout);
+            final long expiredTime = current + (timeout == null ? config.defaultPollingTimeout : timeout);
             final Long i = (Long) action.getParameterValue("pollingInterval", false);
 
             final Object sessionId = action.getParameterValue(Constants.SESSION_ID);
@@ -191,7 +191,7 @@ public class ZSClient {
 
             timer.schedule(new TimerTask() {
                 long count = current;
-                long interval = i == null ? TimeUnit.SECONDS.toMillis(5) : i;
+                long interval = i == null ? config.defaultPollingInterval : i;
 
                 private void done(ApiResult res) {
                     completion.complete(res);
@@ -252,9 +252,9 @@ public class ZSClient {
         private ApiResult syncPollResult(String url) {
             long current = System.currentTimeMillis();
             Long timeout = (Long)action.getParameterValue("timeout", false);
-            long expiredTime = current + (timeout == null ? TimeUnit.HOURS.toMillis(3) : timeout);
+            long expiredTime = current + (timeout == null ? config.defaultPollingTimeout : timeout);
             Long interval = (Long) action.getParameterValue("pollingInterval", false);
-            interval = interval == null ? TimeUnit.SECONDS.toMillis(5) : interval;
+            interval = interval == null ? config.defaultPollingInterval : interval;
 
             Object sessionId = action.getParameterValue(Constants.SESSION_ID);
 

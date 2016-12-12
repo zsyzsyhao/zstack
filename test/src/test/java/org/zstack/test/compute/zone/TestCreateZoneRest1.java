@@ -2,15 +2,10 @@ package org.zstack.test.compute.zone;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.zstack.core.componentloader.ComponentLoader;
 import org.zstack.core.db.DatabaseFacade;
 import org.zstack.header.exception.CloudRuntimeException;
 import org.zstack.header.rest.RESTFacade;
-import org.zstack.rest.AsyncRestQueryResult;
-import org.zstack.rest.RestConstants;
 import org.zstack.sdk.CreateZoneAction;
 import org.zstack.sdk.ZSClient;
 import org.zstack.sdk.ZSConfig;
@@ -21,13 +16,6 @@ import org.zstack.test.WebBeanConstructor;
 import org.zstack.utils.Utils;
 import org.zstack.utils.gson.JSONObjectUtil;
 import org.zstack.utils.logging.CLogger;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static org.zstack.utils.CollectionDSL.e;
-import static org.zstack.utils.CollectionDSL.map;
 
 public class TestCreateZoneRest1 {
     CLogger logger = Utils.getLogger(TestCreateZoneRest1.class);
@@ -54,10 +42,12 @@ public class TestCreateZoneRest1 {
     public void test() throws ApiSenderException, InterruptedException {
         api.loginAsAdmin();
 
-        ZSConfig config = new ZSConfig();
-        config.setHostname("127.0.0.1");
-        config.setPort(8989);
-        ZSClient.setConfig(config);
+        ZSClient.configure(
+                new ZSConfig.Builder()
+                .setHostname("127.0.0.1")
+                .setPort(8989)
+                .build()
+        );
 
         CreateZoneAction action = new CreateZoneAction();
         action.sessionId = api.getAdminSession().getUuid();
