@@ -3,6 +3,8 @@ package org.zstack.rest;
 import org.zstack.header.errorcode.ErrorCode;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by xing5 on 2016/12/8.
@@ -11,9 +13,19 @@ public class ApiResponse extends HashMap {
     private String location;
     private ErrorCode error;
     private Object result;
+    private Map<String, List<String>> schema;
 
     public String getLocation() {
         return location;
+    }
+
+    public Map<String, List<String>> getSchema() {
+        return schema;
+    }
+
+    public void setSchema(Map<String, List<String>> schema) {
+        this.schema = schema;
+        put("schema", schema);
     }
 
     public void setLocation(String location) {

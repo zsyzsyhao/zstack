@@ -58,6 +58,7 @@ public class TestCreateZoneRest {
         RestTemplate tmp = restf.getRESTTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", String.format("OAuth %s", api.getAdminSession().getUuid()));
+        headers.set(RestConstants.HEADER_JSON_SCHEMA, "true");
 
         Map m = map(
                 e("zone", map(
@@ -74,7 +75,7 @@ public class TestCreateZoneRest {
 
             while (true) {
                 logger.debug(String.format("xxxxxxxxxxxxxxxxxx %s", url));
-                ResponseEntity<String> r = tmp.getForEntity(url, String.class);
+                ResponseEntity<String> r = tmp.exchange(url, HttpMethod.GET, new HttpEntity<>("", headers), String.class);
                 AsyncRestQueryResult ret = JSONObjectUtil.toObject(r.getBody(), AsyncRestQueryResult.class);
                 if (r.getStatusCode() == HttpStatus.OK) {
                     logger.debug(JSONObjectUtil.toJsonString(ret.getResult()));

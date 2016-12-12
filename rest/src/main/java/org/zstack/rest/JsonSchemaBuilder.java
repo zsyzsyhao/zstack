@@ -42,7 +42,7 @@ public class JsonSchemaBuilder {
                 continue;
             }
 
-            if (value.getClass().getName().startsWith("java.")) {
+            if (value.getClass().getCanonicalName().startsWith("java.")) {
                 // for JRE classes, only deal with Collection and Map
                 if (value instanceof List) {
                     List c = (List) value;
@@ -78,13 +78,25 @@ public class JsonSchemaBuilder {
         }
     }
 
+    // support Map and org.zstack.* objects
     public Map<String, List<String>> build() {
         try {
-            if (!object.getClass().getName().startsWith("org.zstack")) {
+            if (!object.getClass().getName().startsWith("org.zstack") && !(object instanceof Map)) {
                 throw new CloudRuntimeException(String.format("only a org.zstack.* object can be built schema, %s is not", object.getClass()));
             }
 
-            build(object, new Stack<>());
+            if (object instanceof Map) {
+                Map m = (Map) object;
+                for (Object o : m.entrySet()) {
+                    Map.Entry e = (Map.Entry) o;
+                    build(e.getValue(), new Stack<String>() {
+                        { add(e.getKey().toString());}
+                    });
+                }
+            } else {
+                build(object, new Stack<>());
+            }
+
             return schema;
         } catch (IllegalAccessException e) {
             throw new CloudRuntimeException(e);

@@ -65,10 +65,17 @@ public class RestServer implements Component, CloudBusEventListener {
         HttpSession session;
         String remoteHost;
         String requestUrl;
+        HttpHeaders headers = new HttpHeaders();
 
         public RequestInfo(HttpServletRequest req) {
             session = req.getSession();
             remoteHost = req.getRemoteHost();
+
+            for (Enumeration e = req.getHeaderNames(); e.hasMoreElements() ;) {
+                String name = e.nextElement().toString();
+                headers.add(name, req.getHeader(name));
+            }
+
             try {
                 requestUrl = URLDecoder.decode(req.getRequestURI(), "UTF-8");
             } catch (UnsupportedEncodingException e) {
@@ -407,6 +414,10 @@ public class RestServer implements Component, CloudBusEventListener {
                 response.put(e.getKey(),
                         PropertyUtils.getProperty(replyOrEvent, e.getValue()));
             }
+        }
+
+        if (requestInfo.get().headers.containsKey(RestConstants.HEADER_JSON_SCHEMA)) {
+            response.setSchema(new JsonSchemaBuilder(response).build());
         }
     }
 
