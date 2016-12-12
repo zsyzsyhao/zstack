@@ -15,8 +15,6 @@
     http://zstack.org/schema/zstack/plugin.xsd"
     default-init-method="init" default-destroy-method="destroy">
 
-    <mvc:annotation-driven/>
-
     <bean id="MysqlAsyncRestStore" class="org.zstack.rest.MysqlAsyncRestStore" />
 
     <bean id="RestServer" class="org.zstack.rest.RestServer">
