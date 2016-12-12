@@ -1,6 +1,7 @@
 package org.zstack.sdk;
 
 public class VmNicInventory  {
+
     public java.lang.String uuid;
 
     public java.lang.String vmInstanceUuid;

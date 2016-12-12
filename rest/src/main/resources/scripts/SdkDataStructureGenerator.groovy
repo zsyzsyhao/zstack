@@ -24,6 +24,8 @@ class SdkDataStructureGenerator implements JavaSdkTemplate {
     Map<Class, SdkFile> sdkFileMap = [:]
     Set<Class> laterResolvedClasses = []
 
+    Map<String, String> sourceClassMap = [:]
+
     Reflections reflections = Platform.reflections
 
     SdkDataStructureGenerator() {
@@ -35,7 +37,44 @@ class SdkDataStructureGenerator implements JavaSdkTemplate {
     List<SdkFile> generate() {
         responseClasses.each { c -> generateResponseClass(c) }
         resolveAllClasses()
-        return sdkFileMap.values() as List
+        generateSourceDestClassMap()
+
+        def ret = sdkFileMap.values() as List
+        ret.add(generateSourceDestClassMap())
+
+        return ret
+    }
+
+    def generateSourceDestClassMap() {
+        def srcToDst = []
+        def dstToSrc = []
+
+        sourceClassMap.each { k, v ->
+            srcToDst.add("""\t\t\tput("${k}", "${v}");""")
+            dstToSrc.add("""\t\t\tput("${v}", "${k}");""")
+        }
+
+        SdkFile f = new SdkFile()
+        f.fileName = "SourceClassMap.java"
+        f.content = """package org.zstack.sdk;
+
+import java.util.HashMap;
+
+public class SourceClassMap {
+    final static HashMap<String, String> srcToDstMapping = new HashMap() {
+        {
+${srcToDst.join("\n")}
+        }
+    };
+
+    final static HashMap<String, String> dstToSrcMapping = new HashMap() {
+        {
+${dstToSrc.join("\n")}
+        }
+    };
+}
+"""
+        return f
     }
 
     def resolveAllClasses() {
@@ -77,9 +116,11 @@ class SdkDataStructureGenerator implements JavaSdkTemplate {
         file.content = """package org.zstack.sdk;
 
 public class ${clz.simpleName} ${Object.class.isAssignableFrom(clz.superclass) ? "" : clz.superclass.simpleName} {
+
 ${output.join("\n")}
 }
 """
+        sourceClassMap[clz.name] = "org.zstack.sdk.${clz.simpleName}"
         sdkFileMap.put(clz, file)
     }
 
