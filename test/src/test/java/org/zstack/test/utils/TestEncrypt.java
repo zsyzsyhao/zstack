@@ -57,8 +57,8 @@ public class TestEncrypt implements PasswordEncrypt {
 
         //bus = loader.getComponent(CloudBus.class);
         //EncryptUtil testEncrypt = new EncryptUtil();
-        setPassword("pwd");
-        Assert.assertNotNull(getPassword());
+        setString("pwd");
+        Assert.assertNotNull(getString());
         Assert.assertTrue("pwd" == getPassword(true));
         Assert.assertFalse("pwd" == getPassword(false));
     }

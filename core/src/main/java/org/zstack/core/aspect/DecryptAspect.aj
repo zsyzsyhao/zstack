@@ -22,7 +22,7 @@ import java.security.interfaces.RSAPrivateKey;
 public aspect DecryptAspect {
 	private static final CLogger logger = Utils.getLogger(DecryptAspect.class);
 
-	void around(Object entity) : args(entity) && execution(@org.zstack.header.vo.DECRYPT * *(..)){
+	void around(Object entity) : this(entity) && execution(@org.zstack.header.vo.DECRYPT * *(..)){
 		if(entity instanceof PasswordEncrypt){
 			try{
 				String temp = (String) ((PasswordEncrypt) entity).getPassword();
