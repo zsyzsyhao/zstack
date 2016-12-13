@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zstack.core.cloudbus.CloudBus;
 import org.zstack.core.componentloader.ComponentLoader;
+import org.zstack.core.encrypt.PasswordEncrypt;
 import org.zstack.header.vo.DECRYPT;
 import org.zstack.header.vo.ENCRYPT;
 import org.zstack.test.BeanConstructor;
@@ -13,7 +14,7 @@ import org.zstack.utils.EncryptRSA;
 /**
  * Created by mingjian.deng on 16/11/2.
  */
-public class TestEncrypt {
+public class TestEncrypt implements PasswordEncrypt {
     private String password;
     ComponentLoader loader;
     EncryptRSA rsa;
