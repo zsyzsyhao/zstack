@@ -3,23 +3,20 @@ package org.zstack.sdk;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CreateZoneAction extends AbstractAction {
+public class ChangeZoneStateAction extends AbstractAction {
 
     private static final HashMap<String, Parameter> parameterMap = new HashMap<>();
 
     public static class Result {
         public ErrorCode error;
-        public CreateZoneResult value;
+        public ChangeZoneStateResult value;
     }
 
-    @Param(required = true, maxLength = 255, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
-    public java.lang.String name;
+    @Param(required = true, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
+    public java.lang.String uuid;
 
-    @Param(required = false, maxLength = 2048, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
-    public java.lang.String description;
-
-    @Param(required = false)
-    public java.lang.String resourceUuid;
+    @Param(required = true, validValues = {"enable","disable"}, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
+    public java.lang.String stateEvent;
 
     @Param(required = false)
     public java.util.List systemTags;
@@ -43,8 +40,8 @@ public class CreateZoneAction extends AbstractAction {
             return ret;
         }
         
-        CreateZoneResult value = res.getResult(CreateZoneResult.class);
-        ret.value = value == null ? new CreateZoneResult() : value;
+        ChangeZoneStateResult value = res.getResult(ChangeZoneStateResult.class);
+        ret.value = value == null ? new ChangeZoneStateResult() : value;
         return ret;
     }
 
@@ -59,8 +56,8 @@ public class CreateZoneAction extends AbstractAction {
                     return;
                 }
                 
-                CreateZoneResult value = res.getResult(CreateZoneResult.class);
-                ret.value = value == null ? new CreateZoneResult() : value;
+                ChangeZoneStateResult value = res.getResult(ChangeZoneStateResult.class);
+                ret.value = value == null ? new ChangeZoneStateResult() : value;
                 completion.complete(ret);
             }
         });
@@ -72,11 +69,11 @@ public class CreateZoneAction extends AbstractAction {
 
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
-        info.httpMethod = "POST";
-        info.path = "/zones";
+        info.httpMethod = "PUT";
+        info.path = "/zones/{uuid}/actions";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "zone";
+        info.parameterName = "changeState";
         return info;
     }
 

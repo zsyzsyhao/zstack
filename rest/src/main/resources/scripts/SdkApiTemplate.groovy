@@ -5,6 +5,7 @@ import org.springframework.util.AntPathMatcher
 import org.zstack.header.identity.SuppressCredentialCheck
 import org.zstack.header.message.APIParam
 import org.zstack.header.message.APISyncCallMessage
+import org.zstack.header.query.APIQueryMessage
 import org.zstack.header.rest.APINoSee
 import org.zstack.header.rest.RestRequest
 import org.zstack.header.rest.RestResponse
@@ -23,6 +24,7 @@ class SdkApiTemplate implements JavaSdkTemplate {
     RestRequest requestAnnotation
 
     String resultClassName
+    boolean isQueryApi;
 
     SdkApiTemplate(Class apiMessageClass) {
         this.apiMessageClass = apiMessageClass
@@ -34,6 +36,8 @@ class SdkApiTemplate implements JavaSdkTemplate {
         resultClassName = StringUtils.removeEnd(resultClassName, "Reply")
         resultClassName = StringUtils.capitalize(resultClassName)
         resultClassName = "${resultClassName}Result"
+
+        isQueryApi = APIQueryMessage.class.isAssignableFrom(apiMessageClass);
     }
 
     def normalizeApiName() {
@@ -47,6 +51,10 @@ class SdkApiTemplate implements JavaSdkTemplate {
     }
 
     def generateFields() {
+        if (isQueryApi) {
+            return ""
+        }
+
         def fields = FieldUtils.getAllFields(apiMessageClass)
 
         def output = []
@@ -62,7 +70,13 @@ class SdkApiTemplate implements JavaSdkTemplate {
             if (apiParam != null) {
                 annotationFields.add(String.format("required = %s", apiParam.required()))
                 if (apiParam.validValues().length > 0) {
-                    annotationFields.add(String.format("validValues = {%s}", apiParam.validValues().join(",")))
+                    annotationFields.add(String.format("validValues = {%s}", { ->
+                        def vv = []
+                        for (String v : apiParam.validValues()) {
+                            vv.add("\"${v}\"")
+                        }
+                        return vv.join(",")
+                    }()))
                 }
                 if (!apiParam.validRegexValues().isEmpty()) {
                     annotationFields.add(String.format("validRegexValues = %s", apiParam.validRegexValues()))
@@ -145,6 +159,12 @@ class SdkApiTemplate implements JavaSdkTemplate {
 """)
 
         ms.add("""\
+    Map<String, Parameter> getParameterMap() {
+        return parameterMap;
+    }
+""")
+
+        ms.add("""\
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
         info.httpMethod = "${requestAnnotation.method().name()}";
@@ -164,7 +184,12 @@ class SdkApiTemplate implements JavaSdkTemplate {
         f.fileName = "${generateClassName()}.java"
         f.content = """package org.zstack.sdk;
 
-public class ${generateClassName()} extends AbstractAction {
+import java.util.HashMap;
+import java.util.Map;
+
+public class ${generateClassName()} extends ${isQueryApi ? "QueryAction" : "AbstractAction"} {
+
+    private static final HashMap<String, Parameter> parameterMap = new HashMap<>();
 
     public static class Result {
         public ErrorCode error;

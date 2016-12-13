@@ -83,6 +83,95 @@ public class ZSClient {
         ApiResult doCall() {
             action.checkParameters();
 
+            Request.Builder reqBuilder = new Request.Builder()
+                    .addHeader(Constants.HEADER_JSON_SCHEMA, Boolean.TRUE.toString());
+
+            if (action instanceof QueryAction) {
+                fillQueryApiRequestBuilder(reqBuilder);
+            } else {
+                fillNonQueryApiRequestBuilder(reqBuilder);
+            }
+
+            Request request = reqBuilder.build();
+
+            try {
+                Response response = http.newCall(request).execute();
+                if (!response.isSuccessful()) {
+                    return httpError(response.code(), response.body().string());
+                }
+
+                if (response.code() == 200 || response.code() == 204) {
+                    return writeApiResult(response);
+                } else if (response.code() == 202) {
+                    return pollResult(response);
+                } else {
+                    throw new ApiException(String.format("[Internal Error] the server returns an unknown status code[%s]", response.code()));
+                }
+            } catch (IOException e) {
+                throw new ApiException(e);
+            }
+        }
+
+        private String join(Collection lst, String sep) {
+            String ret = "";
+            boolean first = true;
+            for (Object s : lst) {
+                if (first) {
+                    ret = s.toString();
+                    first = false;
+                    continue;
+                }
+
+                ret = ret + sep + s.toString();
+            }
+
+            return ret;
+        }
+
+        private void fillQueryApiRequestBuilder(Request.Builder reqBuilder) {
+            QueryAction qaction = (QueryAction) action;
+
+            HttpUrl.Builder urlBuilder = new HttpUrl.Builder().scheme("http")
+                    .host(config.hostname)
+                    .port(config.port)
+                    .addPathSegment("/v1".replaceFirst("/", ""))
+                    .addPathSegment(info.path.replaceFirst("/", ""));
+
+            if (!qaction.conditions.isEmpty()) {
+                urlBuilder.addQueryParameter("q", join(qaction.conditions, ","));
+            }
+            if (qaction.limit != null) {
+                urlBuilder.addQueryParameter("limit", String.format("%s", qaction.limit));
+            }
+            if (qaction.start != null) {
+                urlBuilder.addQueryParameter("limit", String.format("%s", qaction.start));
+            }
+            if (qaction.count != null) {
+                urlBuilder.addQueryParameter("count", String.format("%s", qaction.count));
+            }
+            if (qaction.groupBy != null) {
+                urlBuilder.addQueryParameter("groupBy", qaction.groupBy);
+            }
+            if (qaction.replyWithCount != null) {
+                urlBuilder.addQueryParameter("replyWithCount", String.format("%s", qaction.replyWithCount));
+            }
+            if (qaction.sortBy != null) {
+                if (qaction.sortDirection == null) {
+                    urlBuilder.addQueryParameter("sort", String.format("%s", qaction.sortBy));
+                } else {
+                    String d = "asc".equals(qaction.sortDirection) ? "+" : "-";
+                    urlBuilder.addQueryParameter("sort", String.format("%s%s", d, qaction.replyWithCount));
+                }
+            }
+            if (qaction.fields != null && !qaction.fields.isEmpty()) {
+                urlBuilder.addQueryParameter("fields", join(qaction.fields, ","));
+            }
+
+            reqBuilder.addHeader(Constants.HEADER_AUTHORIZATION, String.format("%s %s", Constants.OAUTH, qaction.sessionId));
+            reqBuilder.url(urlBuilder.build()).get();
+        }
+
+        private void fillNonQueryApiRequestBuilder(Request.Builder reqBuilder) {
             HttpUrl url = new HttpUrl.Builder()
                     .scheme("http")
                     .host(config.hostname)
@@ -128,33 +217,11 @@ public class ZSClient {
 
             Map m = new HashMap();
             m.put(info.parameterName, params);
-
-            Request.Builder reqBuilder = new Request.Builder()
-                    .addHeader(Constants.HEADER_JSON_SCHEMA, Boolean.TRUE.toString());
             reqBuilder.url(urlstr).method(info.httpMethod, RequestBody.create(Constants.JSON, gson.toJson(m)));
 
             if (info.needSession) {
                 Object sessionId = action.getParameterValue(Constants.SESSION_ID);
                 reqBuilder.addHeader(Constants.HEADER_AUTHORIZATION, String.format("%s %s", Constants.OAUTH, sessionId));
-            }
-
-            Request request = reqBuilder.build();
-
-            try {
-                Response response = http.newCall(request).execute();
-                if (!response.isSuccessful()) {
-                    return httpError(response.code(), response.body().string());
-                }
-
-                if (response.code() == 200 || response.code() == 204) {
-                    return writeApiResult(response);
-                } else if (response.code() == 202) {
-                    return pollResult(response);
-                } else {
-                    throw new ApiException(String.format("[Internal Error] the server returns an unknown status code[%s]", response.code()));
-                }
-            } catch (IOException e) {
-                throw new ApiException(e);
             }
         }
 

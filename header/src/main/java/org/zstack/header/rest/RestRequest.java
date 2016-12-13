@@ -14,9 +14,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RestRequest {
     String path();
+    String[] optionalPaths() default  {};
     HttpMethod method() default HttpMethod.PUT;
     String actionName() default "";
     String parameterName();
     String[] mappingFields() default {};
     Class responseClass();
+    String[] queryParameters() default {};
 }

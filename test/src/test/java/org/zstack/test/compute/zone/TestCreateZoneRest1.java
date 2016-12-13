@@ -1,14 +1,13 @@
 package org.zstack.test.compute.zone;
 
+import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.zstack.core.componentloader.ComponentLoader;
 import org.zstack.core.db.DatabaseFacade;
 import org.zstack.header.exception.CloudRuntimeException;
 import org.zstack.header.rest.RESTFacade;
-import org.zstack.sdk.CreateZoneAction;
-import org.zstack.sdk.ZSClient;
-import org.zstack.sdk.ZSConfig;
+import org.zstack.sdk.*;
 import org.zstack.test.Api;
 import org.zstack.test.ApiSenderException;
 import org.zstack.test.DBUtil;
@@ -58,5 +57,15 @@ public class TestCreateZoneRest1 {
         }
 
         logger.debug(JSONObjectUtil.toJsonString(res.value));
+
+        QueryZoneAction qaction = new QueryZoneAction();
+        qaction.sessionId = api.getAdminSession().getUuid();
+        qaction.conditions.add("name=zone1");
+        QueryZoneAction.Result r = qaction.call();
+        Assert.assertNull(r.error);
+
+        QueryZoneResult qr = r.value;
+        Assert.assertEquals(1, qr.inventories.size());
+        logger.debug(JSONObjectUtil.toJsonString(r));
     }
 }

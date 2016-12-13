@@ -16,32 +16,30 @@ public abstract class AbstractAction {
         Param annotation;
     }
 
-    static final Map<String, Parameter> parameterMap = new HashMap<String, Parameter>();
+    abstract Map<String, Parameter> getParameterMap();
 
-    private void initializeParametersIfNot() {
-        synchronized (parameterMap) {
-            if (parameterMap.isEmpty()) {
-                Field[] fields = getClass().getDeclaredFields();
-                for (Field f : fields) {
-                    Param at = f.getAnnotation(Param.class);
-                    if (at == null) {
-                        continue;
-                    }
-
-                    Parameter p = new Parameter();
-                    p.annotation = at;
-                    p.field = f;
-                    p.field.setAccessible(true);
-
-                    parameterMap.put(f.getName(), p);
+    private synchronized void initializeParametersIfNot() {
+        if (getParameterMap().isEmpty()) {
+            Field[] fields = getClass().getDeclaredFields();
+            for (Field f : fields) {
+                Param at = f.getAnnotation(Param.class);
+                if (at == null) {
+                    continue;
                 }
+
+                Parameter p = new Parameter();
+                p.annotation = at;
+                p.field = f;
+                p.field.setAccessible(true);
+
+                getParameterMap().put(f.getName(), p);
             }
         }
     }
 
     Set<String> getAllParameterNames() {
         initializeParametersIfNot();
-        return parameterMap.keySet();
+        return getParameterMap().keySet();
     }
 
     Object getParameterValue(String name){
@@ -49,7 +47,7 @@ public abstract class AbstractAction {
     }
 
     Object getParameterValue(String name, boolean exceptionOnNotFound){
-        Parameter p = parameterMap.get(name);
+        Parameter p = getParameterMap().get(name);
         if (p == null) {
             if (exceptionOnNotFound) {
                 throw new ApiException(String.format("no such parameter[%s]", name));
@@ -69,7 +67,7 @@ public abstract class AbstractAction {
         initializeParametersIfNot();
 
         try {
-            for (Parameter p : parameterMap.values()) {
+            for (Parameter p : getParameterMap().values()) {
                 Object value = p.field.get(this);
                 Param at = p.annotation;
 

@@ -3,36 +3,15 @@ package org.zstack.sdk;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CreateZoneAction extends AbstractAction {
+public class QueryZoneAction extends QueryAction {
 
     private static final HashMap<String, Parameter> parameterMap = new HashMap<>();
 
     public static class Result {
         public ErrorCode error;
-        public CreateZoneResult value;
+        public QueryZoneResult value;
     }
 
-    @Param(required = true, maxLength = 255, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
-    public java.lang.String name;
-
-    @Param(required = false, maxLength = 2048, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
-    public java.lang.String description;
-
-    @Param(required = false)
-    public java.lang.String resourceUuid;
-
-    @Param(required = false)
-    public java.util.List systemTags;
-
-    @Param(required = false)
-    public java.util.List userTags;
-
-    @Param(required = true)
-    public String sessionId;
-
-    public long timeout;
-    
-    public long pollingInterval;
 
 
     public Result call() {
@@ -43,8 +22,8 @@ public class CreateZoneAction extends AbstractAction {
             return ret;
         }
         
-        CreateZoneResult value = res.getResult(CreateZoneResult.class);
-        ret.value = value == null ? new CreateZoneResult() : value;
+        QueryZoneResult value = res.getResult(QueryZoneResult.class);
+        ret.value = value == null ? new QueryZoneResult() : value;
         return ret;
     }
 
@@ -59,8 +38,8 @@ public class CreateZoneAction extends AbstractAction {
                     return;
                 }
                 
-                CreateZoneResult value = res.getResult(CreateZoneResult.class);
-                ret.value = value == null ? new CreateZoneResult() : value;
+                QueryZoneResult value = res.getResult(QueryZoneResult.class);
+                ret.value = value == null ? new QueryZoneResult() : value;
                 completion.complete(ret);
             }
         });
@@ -72,11 +51,11 @@ public class CreateZoneAction extends AbstractAction {
 
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
-        info.httpMethod = "POST";
+        info.httpMethod = "GET";
         info.path = "/zones";
         info.needSession = true;
-        info.needPoll = true;
-        info.parameterName = "zone";
+        info.needPoll = false;
+        info.parameterName = "null";
         return info;
     }
 
