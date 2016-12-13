@@ -18,7 +18,7 @@ public aspect EncryptAspect {
         //logger.debug(proxy.getClass().getName());
         if(param.length() > 0){
             try{
-                rsa = new EncryptRSA();
+                //rsa = new EncryptRSA();
                 param = rsa.encrypt1(param);
             }catch(Exception e){
                 logger.debug(String.format("encrypt aspectj is error..."));

@@ -15,5 +15,6 @@
     <bean id="EncryptRSA" class="org.zstack.utils.EncryptRSA" />
 
     <bean id="EncryptAspect" class="org.zstack.core.aspect.EncryptAspect" factory-method="aspectOf" />
+    <bean id="DecryptAspect" class="org.zstack.core.aspect.DecryptAspect" factory-method="aspectOf" />
 
 </beans>
