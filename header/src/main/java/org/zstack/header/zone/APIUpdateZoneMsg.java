@@ -9,8 +9,7 @@ import org.zstack.header.rest.RestRequest;
  */
 @RestRequest(
         path = "/zones/{uuid}/actions",
-        actionName = "update",
-        parameterName = "update",
+        isAction = true,
         responseClass = APIUpdateZoneEvent.class
 )
 public class APIUpdateZoneMsg extends APIMessage implements ZoneMessage {

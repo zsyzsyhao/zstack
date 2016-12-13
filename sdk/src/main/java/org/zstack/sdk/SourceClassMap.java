@@ -7,6 +7,7 @@ public class SourceClassMap {
         {
 			put("org.zstack.header.zone.ZoneInventory", "org.zstack.sdk.ZoneInventory");
 			put("org.zstack.header.vm.VmInstanceInventory", "org.zstack.sdk.VmInstanceInventory");
+			put("org.zstack.header.cluster.ClusterInventory", "org.zstack.sdk.ClusterInventory");
 			put("org.zstack.header.vm.VmNicInventory", "org.zstack.sdk.VmNicInventory");
 			put("org.zstack.header.volume.VolumeInventory", "org.zstack.sdk.VolumeInventory");
         }
@@ -16,6 +17,7 @@ public class SourceClassMap {
         {
 			put("org.zstack.sdk.ZoneInventory", "org.zstack.header.zone.ZoneInventory");
 			put("org.zstack.sdk.VmInstanceInventory", "org.zstack.header.vm.VmInstanceInventory");
+			put("org.zstack.sdk.ClusterInventory", "org.zstack.header.cluster.ClusterInventory");
 			put("org.zstack.sdk.VmNicInventory", "org.zstack.header.vm.VmNicInventory");
 			put("org.zstack.sdk.VolumeInventory", "org.zstack.header.volume.VolumeInventory");
         }

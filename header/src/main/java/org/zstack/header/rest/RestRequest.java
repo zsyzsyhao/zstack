@@ -16,8 +16,8 @@ public @interface RestRequest {
     String path();
     String[] optionalPaths() default  {};
     HttpMethod method() default HttpMethod.PUT;
-    String actionName() default "";
-    String parameterName();
+    boolean isAction() default false;
+    String parameterName() default "";
     String[] mappingFields() default {};
     Class responseClass();
     String[] queryParameters() default {};

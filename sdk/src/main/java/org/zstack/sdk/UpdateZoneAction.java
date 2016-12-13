@@ -76,7 +76,7 @@ public class UpdateZoneAction extends AbstractAction {
         info.path = "/zones/{uuid}/actions";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "update";
+        info.parameterName = "updateZone";
         return info;
     }
 

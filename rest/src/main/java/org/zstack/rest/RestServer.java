@@ -136,6 +136,7 @@ public class RestServer implements Component, CloudBusEventListener {
         Map<String, String> requestMappingFields;
         String path;
         List<String> optionalPaths = new ArrayList<>();
+        String actionName;
 
         Api(Class clz, RestRequest at) {
             apiClass = clz;
@@ -158,6 +159,17 @@ public class RestServer implements Component, CloudBusEventListener {
             responseAnnotation = (RestResponse) apiResponseClass.getAnnotation(RestResponse.class);
             DebugUtils.Assert(responseAnnotation != null, String.format("%s must be annotated with @RestResponse", apiResponseClass));
             Collections.addAll(optionalPaths, at.optionalPaths());
+
+            if (at.isAction()) {
+                actionName = StringUtils.removeStart(apiClass.getSimpleName(), "API");
+                actionName = StringUtils.removeEnd(actionName, "Msg");
+                actionName = StringUtils.uncapitalize(actionName);
+            }
+
+            if (!at.isAction() && requestAnnotation.parameterName().isEmpty()) {
+                throw new CloudRuntimeException(String.format("Invalid @RestRequest of %s, either isAction must be set to true or" +
+                        " parameterName is set to a non-empty string", apiClass.getName()));
+            }
         }
 
         String getMappingField(String key) {
@@ -344,13 +356,14 @@ public class RestServer implements Component, CloudBusEventListener {
         sendResponse(statusCode, response.isEmpty() ? "" : JSONObjectUtil.toJsonString(response), rsp);
     }
 
-    private void handleNonUniqueApi(Collection apis, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IOException {
+    private void handleNonUniqueApi(Collection<Api> apis, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IOException {
         Map m = JSONObjectUtil.toObject(entity.getBody(), LinkedHashMap.class);
         Api api;
 
+        String parameterName = null;
         if ("POST".equals(req.getMethod())) {
             // create API
-            Optional<Api> o = apis.stream().filter(a -> ((Api)a).requestAnnotation.method().name().equals("POST")).findAny();
+            Optional<Api> o = apis.stream().filter(a -> a.requestAnnotation.method().name().equals("POST")).findAny();
             if (!o.isPresent()) {
                 throw new RestException(HttpStatus.INTERNAL_SERVER_ERROR.value(), String.format("No creational API found" +
                         " for the path[%s]", req.getRequestURI()));
@@ -359,20 +372,18 @@ public class RestServer implements Component, CloudBusEventListener {
             api = o.get();
         } else if ("PUT".equals(req.getMethod())) {
             // action API
-            Optional<Api> o = apis.stream().filter(a -> {
-                Api aa = (Api) a;
-                return aa.requestAnnotation.method().name().equals("PUT") && m.containsKey(aa.requestAnnotation.actionName());
-            }).findAny();
+            Optional<Api> o = apis.stream().filter(a -> m.containsKey(a.actionName)).findAny();
 
             if (!o.isPresent()) {
-                throw new RestException(HttpStatus.BAD_REQUEST.value(), String.format("the body doesn't contain any action mapping" +
+                throw new RestException(HttpStatus.BAD_REQUEST.value(), String.format("the body doesn't contain action mapping" +
                         " to the URL[%s]", getDecodedUrl(req)));
             }
 
             api = o.get();
+            parameterName = api.actionName;
         } else if ("GET".equals(req.getMethod())) {
             // query API
-            Optional<Api> o = apis.stream().filter(a -> ((Api)a).requestAnnotation.method().name().equals("GET")).findAny();
+            Optional<Api> o = apis.stream().filter(a -> a.requestAnnotation.method().name().equals("GET")).findAny();
             if (!o.isPresent()) {
                 throw new RestException(HttpStatus.INTERNAL_SERVER_ERROR.value(), String.format("No query API found" +
                         " for the path[%s]", req.getRequestURI()));
@@ -381,7 +392,7 @@ public class RestServer implements Component, CloudBusEventListener {
             api = o.get();
         } else if ("DELETE".equals(req.getMethod())) {
             // DELETE API
-            Optional<Api> o = apis.stream().filter(a -> ((Api)a).requestAnnotation.method().name().equals("DELETE")).findAny();
+            Optional<Api> o = apis.stream().filter(a -> a.requestAnnotation.method().name().equals("DELETE")).findAny();
             if (!o.isPresent()) {
                 throw new RestException(HttpStatus.INTERNAL_SERVER_ERROR.value(), String.format("No delete API found" +
                         " for the path[%s]", req.getRequestURI()));
@@ -393,7 +404,8 @@ public class RestServer implements Component, CloudBusEventListener {
                     " the path[%s]", req.getMethod(), req.getRequestURI()));
         }
 
-        handleApi(api, m, api.requestAnnotation.parameterName(), entity, req, rsp);
+        parameterName = parameterName == null ? api.requestAnnotation.parameterName() : parameterName;
+        handleApi(api, m, parameterName, entity, req, rsp);
     }
 
     private void handleApi(Api api, Map body, String parameterName, HttpEntity<String> entity, HttpServletRequest req, HttpServletResponse rsp) throws RestException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, IOException {

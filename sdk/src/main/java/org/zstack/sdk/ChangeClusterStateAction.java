@@ -3,13 +3,13 @@ package org.zstack.sdk;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ChangeZoneStateAction extends AbstractAction {
+public class ChangeClusterStateAction extends AbstractAction {
 
     private static final HashMap<String, Parameter> parameterMap = new HashMap<>();
 
     public static class Result {
         public ErrorCode error;
-        public ChangeZoneStateResult value;
+        public ChangeClusterStateResult value;
     }
 
     @Param(required = true, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
@@ -40,8 +40,8 @@ public class ChangeZoneStateAction extends AbstractAction {
             return ret;
         }
         
-        ChangeZoneStateResult value = res.getResult(ChangeZoneStateResult.class);
-        ret.value = value == null ? new ChangeZoneStateResult() : value;
+        ChangeClusterStateResult value = res.getResult(ChangeClusterStateResult.class);
+        ret.value = value == null ? new ChangeClusterStateResult() : value;
         return ret;
     }
 
@@ -56,8 +56,8 @@ public class ChangeZoneStateAction extends AbstractAction {
                     return;
                 }
                 
-                ChangeZoneStateResult value = res.getResult(ChangeZoneStateResult.class);
-                ret.value = value == null ? new ChangeZoneStateResult() : value;
+                ChangeClusterStateResult value = res.getResult(ChangeClusterStateResult.class);
+                ret.value = value == null ? new ChangeClusterStateResult() : value;
                 completion.complete(ret);
             }
         });
@@ -70,10 +70,10 @@ public class ChangeZoneStateAction extends AbstractAction {
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
         info.httpMethod = "PUT";
-        info.path = "/zones/{uuid}/actions";
+        info.path = "/clusters/{uuid}/action";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "changeZoneState";
+        info.parameterName = "changeClusterState";
         return info;
     }
 

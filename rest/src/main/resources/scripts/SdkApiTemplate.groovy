@@ -23,18 +23,20 @@ class SdkApiTemplate implements JavaSdkTemplate {
     Class apiMessageClass
     RestRequest requestAnnotation
 
+    String baseName;
     String resultClassName
-    boolean isQueryApi;
+    boolean isQueryApi
 
     SdkApiTemplate(Class apiMessageClass) {
         this.apiMessageClass = apiMessageClass
         this.requestAnnotation = apiMessageClass.getAnnotation(RestRequest.class)
 
-        resultClassName = requestAnnotation.responseClass().simpleName
-        resultClassName = StringUtils.removeStart(resultClassName, "API")
-        resultClassName = StringUtils.removeEnd(resultClassName, "Event")
-        resultClassName = StringUtils.removeEnd(resultClassName, "Reply")
-        resultClassName = StringUtils.capitalize(resultClassName)
+        baseName = requestAnnotation.responseClass().simpleName
+        baseName = StringUtils.removeStart(baseName, "API")
+        baseName = StringUtils.removeEnd(baseName, "Event")
+        baseName = StringUtils.removeEnd(baseName, "Reply")
+
+        resultClassName = StringUtils.capitalize(baseName)
         resultClassName = "${resultClassName}Result"
 
         isQueryApi = APIQueryMessage.class.isAssignableFrom(apiMessageClass);
@@ -171,7 +173,7 @@ class SdkApiTemplate implements JavaSdkTemplate {
         info.path = "${requestAnnotation.path()}";
         info.needSession = ${!apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)};
         info.needPoll = ${!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)};
-        info.parameterName = "${requestAnnotation.parameterName()}";
+        info.parameterName = "${requestAnnotation.isAction() ? StringUtils.uncapitalize(baseName) : requestAnnotation.parameterName()}";
         return info;
     }
 """)
