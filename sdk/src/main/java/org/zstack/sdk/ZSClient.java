@@ -172,19 +172,17 @@ public class ZSClient {
         }
 
         private void fillNonQueryApiRequestBuilder(Request.Builder reqBuilder) {
-            HttpUrl url = new HttpUrl.Builder()
+            HttpUrl.Builder builder = new HttpUrl.Builder()
                     .scheme("http")
                     .host(config.hostname)
                     .port(config.port)
                     // HttpUrl will add an extra / to the path segment
                     // so /v1/zones will become //v1//zones
                     // we remove the extra / here
-                    .addPathSegment("/v1".replaceFirst("/", ""))
-                    .addPathSegment(info.path.replaceFirst("/", ""))
-                    .build();
+                    .addPathSegment("/v1".replaceFirst("/", ""));
 
             String urlstr;
-            List<String> varNames = getVarNamesFromUrl(url.url().toString());
+            List<String> varNames = getVarNamesFromUrl(info.path);
             if (!varNames.isEmpty()) {
                 Map<String, Object> vars = new HashMap<>();
                 for (String vname : varNames) {
@@ -197,9 +195,12 @@ public class ZSClient {
                     vars.put(vname, value);
                 }
 
-                urlstr = substituteUrl(url.url().toString(), vars);
+                String path = substituteUrl(info.path, vars);
+                builder.addPathSegment(path.replaceFirst("/", ""));
+                urlstr = builder.build().url().toString();
             } else {
-                urlstr = url.url().toString();
+                builder.addPathSegment(info.path.replaceFirst("/", ""));
+                urlstr = builder.build().url().toString();
             }
 
             final Map<String, Object> params = new HashMap<>();

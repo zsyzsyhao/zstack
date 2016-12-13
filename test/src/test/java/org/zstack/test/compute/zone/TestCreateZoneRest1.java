@@ -7,6 +7,7 @@ import org.zstack.core.componentloader.ComponentLoader;
 import org.zstack.core.db.DatabaseFacade;
 import org.zstack.header.exception.CloudRuntimeException;
 import org.zstack.header.rest.RESTFacade;
+import org.zstack.header.zone.ZoneState;
 import org.zstack.sdk.*;
 import org.zstack.test.Api;
 import org.zstack.test.ApiSenderException;
@@ -67,5 +68,25 @@ public class TestCreateZoneRest1 {
         QueryZoneResult qr = r.value;
         Assert.assertEquals(1, qr.inventories.size());
         logger.debug(JSONObjectUtil.toJsonString(r));
+
+        ZoneInventory zone = r.value.inventories.get(0);
+        ChangeZoneStateAction ca = new ChangeZoneStateAction();
+        ca.uuid = zone.uuid;
+        ca.sessionId = api.getAdminSession().getUuid();
+        ca.stateEvent = "disable";
+        ChangeZoneStateAction.Result z = ca.call();
+        Assert.assertNull(z.error);
+        Assert.assertEquals(ZoneState.Disabled.toString(), z.value.inventory.getState());
+
+        DeleteZoneAction da = new DeleteZoneAction();
+        da.uuid = zone.uuid;
+        da.sessionId = api.getAdminSession().getUuid();
+        da.call();
+
+        qaction = new QueryZoneAction();
+        qaction.sessionId = api.getAdminSession().getUuid();
+        qaction.conditions.add(String.format("uuid=%s", zone.uuid));
+        r = qaction.call();
+        Assert.assertEquals(0, r.value.inventories.size());
     }
 }

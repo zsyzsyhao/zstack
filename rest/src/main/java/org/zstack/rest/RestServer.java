@@ -237,7 +237,7 @@ public class RestServer implements Component, CloudBusEventListener {
             StringBuilder sb = new StringBuilder(String.format("[ID: %s] Response to %s (%s),", info.session.getId(),
                     info.remoteHost, info.requestUrl));
             sb.append(String.format(" Status Code: %s,", statusCode));
-            sb.append(String.format(" Body: %s", body));
+            sb.append(String.format(" Body: %s", body.isEmpty() ? null : body));
 
             requestLogger.trace(sb.toString());
         }
@@ -261,7 +261,8 @@ public class RestServer implements Component, CloudBusEventListener {
         HttpEntity<String> entity = toHttpEntity(req);
 
         if (requestLogger.isTraceEnabled()) {
-            StringBuilder sb = new StringBuilder(String.format("[ID: %s] Request from %s (to %s), ", req.getSession().getId(),
+            StringBuilder sb = new StringBuilder(String.format("[ID: %s, Method: %s] Request from %s (to %s), ",
+                    req.getSession().getId(), req.getMethod(),
                     req.getRemoteHost(), URLDecoder.decode(req.getRequestURI(), "UTF-8")));
             sb.append(String.format(" Headers: %s,", JSONObjectUtil.toJsonString(entity.getHeaders())));
             if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {
