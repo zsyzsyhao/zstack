@@ -26,21 +26,30 @@ public class TestEncrypt implements PasswordEncrypt {
         rsa = loader.getComponent(EncryptRSA.class);
     }
 
-    @DECRYPT
     public String getPassword() {
         return password;
     }
 
     public String getPassword(boolean encrypt){
         if(encrypt)
-            return getPassword();
+            return getString();
         else
             return password;
     }
 
-    @ENCRYPT
+
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    @ENCRYPT
+    public void setString(String password){
+        this.password = password;
+    }
+
+    @DECRYPT
+    public String getString(){
+        return password;
     }
 
     @Test
@@ -49,8 +58,8 @@ public class TestEncrypt implements PasswordEncrypt {
         //bus = loader.getComponent(CloudBus.class);
         //EncryptUtil testEncrypt = new EncryptUtil();
         setPassword("pwd");
-        //Assert.assertNotNull(getPassword());
-        //Assert.assertTrue("pwd" == getPassword(true));
-        //Assert.assertFalse("pwd" == getPassword(false));
+        Assert.assertNotNull(getPassword());
+        Assert.assertTrue("pwd" == getPassword(true));
+        Assert.assertFalse("pwd" == getPassword(false));
     }
 }
