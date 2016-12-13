@@ -26,6 +26,7 @@ public aspect DecryptAspect {
 		if(entity instanceof PasswordEncrypt){
 			try{
 				String temp = (String) ((PasswordEncrypt) entity).getPassword();
+				logger.debug(String.format("decrypted password is: %s", temp));
 				((PasswordEncrypt) entity).setPassword((String) decrypt(temp));
 			}catch(Exception e){
 				logger.debug(String.format("decrypt aspectj is error..."));
@@ -33,9 +34,11 @@ public aspect DecryptAspect {
 				e.printStackTrace();
 			}
 
-			logger.debug(String.format("decrypted password is: %s", entity));
-			return proceed(entity);
+
+
 		}
+
+		return proceed(entity);
 	}
 
 	private Object decrypt(String password) throws NoSuchAlgorithmException,
