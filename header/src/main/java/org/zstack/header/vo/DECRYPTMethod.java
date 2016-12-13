@@ -22,6 +22,7 @@ import java.security.interfaces.RSAPrivateKey;
  * Created by mingjian.deng on 16/11/1.
  */
 
+/*
 
 @Aspect
 @Component
@@ -48,4 +49,5 @@ public class DECRYPTMethod {
     }
 
 }
+*/
 
