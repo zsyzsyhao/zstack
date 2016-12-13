@@ -129,7 +129,8 @@ public class ZSClient {
             Map m = new HashMap();
             m.put(info.parameterName, params);
 
-            Request.Builder reqBuilder = new Request.Builder();
+            Request.Builder reqBuilder = new Request.Builder()
+                    .addHeader(Constants.HEADER_JSON_SCHEMA, Boolean.TRUE.toString());
             reqBuilder.url(urlstr).method(info.httpMethod, RequestBody.create(Constants.JSON, gson.toJson(m)));
 
             if (info.needSession) {
@@ -203,6 +204,7 @@ public class ZSClient {
                     Request req = new Request.Builder()
                             .url(url)
                             .addHeader(Constants.HEADER_AUTHORIZATION, String.format("%s %s", Constants.OAUTH, sessionId))
+                            .addHeader(Constants.HEADER_JSON_SCHEMA, Boolean.TRUE.toString())
                             .get()
                             .build();
 
@@ -262,6 +264,7 @@ public class ZSClient {
                 Request req = new Request.Builder()
                         .url(url)
                         .addHeader(Constants.HEADER_AUTHORIZATION, String.format("%s %s", Constants.OAUTH, sessionId))
+                        .addHeader(Constants.HEADER_JSON_SCHEMA, Boolean.TRUE.toString())
                         .get()
                         .build();
 

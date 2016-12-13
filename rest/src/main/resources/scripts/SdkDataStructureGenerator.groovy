@@ -200,6 +200,12 @@ ${output.join("\n")}
 
             return """\
     public ${field.type.simpleName} ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.simpleName} ${fname}) {
+        this.${fname} = ${fname};
+    }
+    public ${field.type.simpleName} get${StringUtils.capitalize(fname)}() {
+        return this.${fname};
+    }
 """
         }
 
@@ -214,10 +220,22 @@ ${output.join("\n")}
 
                 return """\
     public ${field.type.name}<${genericType.simpleName}> ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.name}<${genericType.simpleName}> ${fname}) {
+        this.${fname} = ${fname};
+    }
+    public ${field.type.name}<${genericType.simpleName}> get${StringUtils.capitalize(fname)}() {
+        return this.${fname};
+    }
 """
             } else {
                 return """\
     public ${field.type.name} ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.name} ${fname}) {
+        this.${fname} = ${fname};
+    }
+    public ${field.type.name} get${StringUtils.capitalize(fname)}() {
+        return this.${fname};
+    }
 """
             }
         } else if (Map.class.isAssignableFrom(field.type)) {
@@ -230,15 +248,33 @@ ${output.join("\n")}
 
                 return """\
     public ${field.type.name}<String, ${genericType.simpleName}> ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.name}<String, ${genericType.simpleName}> ${fname}) {
+        this.${fname} = ${fname};
+    }
+    public ${field.type.name}<String, ${genericType.simpleName}> get${StringUtils.capitalize(fname)}() {
+        return this.${fname};
+    }
 """
             } else {
                 return """\
     public ${field.type.name} ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.name} ${fname}) {
+        this.${fname} = ${fname};
+    }
+    public ${field.type.name} get${StringUtils.capitalize(fname)}() {
+        return this.${fname};
+    }
 """
             }
         } else {
             return """\
     public ${field.type.name} ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.name} ${fname}) {
+        this.${fname} = ${fname};
+    }
+    public ${field.type.name} get${StringUtils.capitalize(fname)}() {
+        return this.${fname};
+    }
 """
         }
     }
