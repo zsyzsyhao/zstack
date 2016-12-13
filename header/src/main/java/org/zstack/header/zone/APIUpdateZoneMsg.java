@@ -1,5 +1,6 @@
 package org.zstack.header.zone;
 
+import org.springframework.http.HttpMethod;
 import org.zstack.header.message.APIMessage;
 import org.zstack.header.message.APIParam;
 import org.zstack.header.rest.RestRequest;
@@ -10,7 +11,8 @@ import org.zstack.header.rest.RestRequest;
 @RestRequest(
         path = "/zones/{uuid}/actions",
         isAction = true,
-        responseClass = APIUpdateZoneEvent.class
+        responseClass = APIUpdateZoneEvent.class,
+        method = HttpMethod.PUT
 )
 public class APIUpdateZoneMsg extends APIMessage implements ZoneMessage {
     @APIParam(maxLength = 255, required = false)

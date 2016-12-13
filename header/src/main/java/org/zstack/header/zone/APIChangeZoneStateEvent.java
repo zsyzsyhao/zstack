@@ -22,7 +22,7 @@ import org.zstack.header.rest.RestResponse;
  * }
  * @since 0.1.0
  */
-@RestResponse(mappingAllTo = "inventory")
+@RestResponse(allTo = "inventory")
 public class APIChangeZoneStateEvent extends APIEvent {
     /**
      * @desc zone inventory (see :ref:`ZoneInventory`)

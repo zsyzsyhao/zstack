@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 public @interface RestRequest {
     String path();
     String[] optionalPaths() default  {};
-    HttpMethod method() default HttpMethod.PUT;
+    HttpMethod method();
     boolean isAction() default false;
     String parameterName() default "";
     String[] mappingFields() default {};

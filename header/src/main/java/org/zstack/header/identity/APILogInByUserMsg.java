@@ -1,6 +1,7 @@
 package org.zstack.header.identity;
 
 import org.zstack.header.message.APIParam;
+import org.zstack.header.rest.RestRequest;
 
 @SuppressCredentialCheck
 public class APILogInByUserMsg extends APISessionMessage {

@@ -35,7 +35,13 @@ class SdkDataStructureGenerator implements JavaSdkTemplate {
 
     @Override
     List<SdkFile> generate() {
-        responseClasses.each { c -> generateResponseClass(c) }
+        responseClasses.each { c ->
+            try {
+                generateResponseClass(c)
+            } catch (Throwable t) {
+                throw new CloudRuntimeException("failed to generate SDK for the class[${c.name}]", t)
+            }
+        }
         resolveAllClasses()
         generateSourceDestClassMap()
 
@@ -86,8 +92,12 @@ ${dstToSrc.join("\n")}
         toResolve.addAll(laterResolvedClasses)
 
         toResolve.each { Class clz ->
-            resolveClass(clz)
-            laterResolvedClasses.remove(clz)
+            try {
+                resolveClass(clz)
+                laterResolvedClasses.remove(clz)
+            } catch (Throwable t) {
+                throw new CloudRuntimeException("failed to generate SDK for the class[${clz.name}]", t)
+            }
         }
 
         resolveAllClasses()
@@ -125,9 +135,11 @@ ${output.join("\n")}
     }
 
     def isZStackClass(Class clz) {
-        if (clz.name.startsWith("java.")) {
+        if (clz.name.startsWith("java.") || int.class == clz || long.class == clz
+                || short.class == clz || char.class == clz || boolean.class == clz || float.class == clz
+                || double.class == clz) {
             return false
-        } else if (clz.name.startsWith("org.zstack")) {
+        } else if (clz.canonicalName.startsWith("org.zstack")) {
             return true
         } else {
             throw new CloudRuntimeException("${clz.name} is neither JRE class nor ZStack class")
@@ -156,11 +168,11 @@ ${output.join("\n")}
             }
         }
 
-        if (!at.mappingAllTo().isEmpty()) {
-            Field f = responseClass.getDeclaredField(at.mappingAllTo())
-            addToFields(at.mappingAllTo(), f)
+        if (!at.allTo().isEmpty()) {
+            Field f = responseClass.getDeclaredField(at.allTo())
+            addToFields(at.allTo(), f)
         } else {
-            at.mappingFields().each { s ->
+            at.fieldsTo().each { s ->
                 def ss = s.split("=")
                 def dst = ss[0].trim()
                 def src = ss[1].trim()

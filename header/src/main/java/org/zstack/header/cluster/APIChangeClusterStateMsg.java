@@ -38,7 +38,7 @@ import org.zstack.header.rest.RestRequest;
  * @since 0.1.0
  */
 @RestRequest(
-        path = "/clusters/{uuid}/action",
+        path = "/clusters/{uuid}/actions",
         method = HttpMethod.PUT,
         isAction = true,
         responseClass = APIChangeClusterStateEvent.class

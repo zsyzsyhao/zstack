@@ -70,7 +70,7 @@ public class ChangeClusterStateAction extends AbstractAction {
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
         info.httpMethod = "PUT";
-        info.path = "/clusters/{uuid}/action";
+        info.path = "/clusters/{uuid}/actions";
         info.needSession = true;
         info.needPoll = true;
         info.parameterName = "changeClusterState";

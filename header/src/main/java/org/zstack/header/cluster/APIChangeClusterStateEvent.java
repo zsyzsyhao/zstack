@@ -23,7 +23,7 @@ import org.zstack.header.rest.RestResponse;
  * }
  * @since 0.1.0
  */
-@RestResponse(mappingAllTo = "inventory")
+@RestResponse(allTo = "inventory")
 public class APIChangeClusterStateEvent extends APIEvent {
     /**
      * @desc cluster inventory (see :ref:`ClusterInventory`)

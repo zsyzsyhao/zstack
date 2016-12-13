@@ -1,18 +1,18 @@
 package scripts
 
 import org.apache.commons.lang.StringUtils
-import org.springframework.util.AntPathMatcher
+import org.zstack.header.exception.CloudRuntimeException
 import org.zstack.header.identity.SuppressCredentialCheck
 import org.zstack.header.message.APIParam
 import org.zstack.header.message.APISyncCallMessage
 import org.zstack.header.query.APIQueryMessage
 import org.zstack.header.rest.APINoSee
 import org.zstack.header.rest.RestRequest
-import org.zstack.header.rest.RestResponse
 import org.zstack.rest.sdk.JavaSdkTemplate
 import org.zstack.rest.sdk.SdkFile
 import org.zstack.utils.FieldUtils
-import org.zstack.utils.TypeUtils
+import org.zstack.utils.Utils
+import org.zstack.utils.logging.CLogger
 
 import java.lang.reflect.Field
 
@@ -20,6 +20,8 @@ import java.lang.reflect.Field
  * Created by xing5 on 2016/12/9.
  */
 class SdkApiTemplate implements JavaSdkTemplate {
+    CLogger logger = Utils.getLogger(SdkApiTemplate.class)
+
     Class apiMessageClass
     RestRequest requestAnnotation
 
@@ -28,18 +30,22 @@ class SdkApiTemplate implements JavaSdkTemplate {
     boolean isQueryApi
 
     SdkApiTemplate(Class apiMessageClass) {
-        this.apiMessageClass = apiMessageClass
-        this.requestAnnotation = apiMessageClass.getAnnotation(RestRequest.class)
+        try {
+            this.apiMessageClass = apiMessageClass
+            this.requestAnnotation = apiMessageClass.getAnnotation(RestRequest.class)
 
-        baseName = requestAnnotation.responseClass().simpleName
-        baseName = StringUtils.removeStart(baseName, "API")
-        baseName = StringUtils.removeEnd(baseName, "Event")
-        baseName = StringUtils.removeEnd(baseName, "Reply")
+            baseName = requestAnnotation.responseClass().simpleName
+            baseName = StringUtils.removeStart(baseName, "API")
+            baseName = StringUtils.removeEnd(baseName, "Event")
+            baseName = StringUtils.removeEnd(baseName, "Reply")
 
-        resultClassName = StringUtils.capitalize(baseName)
-        resultClassName = "${resultClassName}Result"
+            resultClassName = StringUtils.capitalize(baseName)
+            resultClassName = "${resultClassName}Result"
 
-        isQueryApi = APIQueryMessage.class.isAssignableFrom(apiMessageClass);
+            isQueryApi = APIQueryMessage.class.isAssignableFrom(apiMessageClass);
+        } catch (Throwable t) {
+            throw new CloudRuntimeException(String.format("failed to make SDK for the class[%s]", apiMessageClass), t)
+        }
     }
 
     def normalizeApiName() {

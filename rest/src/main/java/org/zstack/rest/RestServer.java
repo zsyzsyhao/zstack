@@ -98,17 +98,16 @@ public class RestServer implements Component, CloudBusEventListener {
             Class clz = GroovyUtils.getClass("scripts/SdkApiTemplate.groovy", RestServer.class.getClassLoader());
             Set<Class<?>> apiClasses = Platform.getReflections().getTypesAnnotatedWith(RestRequest.class);
 
+            List<SdkFile> allFiles = new ArrayList<>();
             for (Class apiClz : apiClasses) {
                 JavaSdkTemplate tmp = (JavaSdkTemplate) clz.getConstructor(Class.class).newInstance(apiClz);
-                List<SdkFile> files = tmp.generate();
-                for (SdkFile f : files) {
-                    String fpath = PathUtil.join(path, f.getFileName());
-                    FileUtils.writeStringToFile(new File(fpath), f.getContent());
-                }
+                allFiles.addAll(tmp.generate());
             }
 
             JavaSdkTemplate tmp = GroovyUtils.loadClass("scripts/SdkDataStructureGenerator.groovy", RestServer.class.getClassLoader());
-            for (SdkFile f : tmp.generate()) {
+            allFiles.addAll(tmp.generate());
+
+            for (SdkFile f : allFiles) {
                 //logger.debug(String.format("\n%s", f.getContent()));
                 String fpath = PathUtil.join(path, f.getFileName());
                 FileUtils.writeStringToFile(new File(fpath), f.getContent());
@@ -200,10 +199,10 @@ public class RestServer implements Component, CloudBusEventListener {
             this.annotation = annotation;
             this.apiResponseClass = apiResponseClass;
 
-            if (annotation.mappingFields().length > 0) {
+            if (annotation.fieldsTo().length > 0) {
                 responseMappingFields = new HashMap<>();
 
-                for (String mf : annotation.mappingFields()) {
+                for (String mf : annotation.fieldsTo()) {
                     String[] kv = mf.split("=");
                     if (kv.length != 2) {
                         throw new CloudRuntimeException(String.format("bad mappingFields[%s] of %s", mf, apiResponseClass));
@@ -588,9 +587,9 @@ public class RestServer implements Component, CloudBusEventListener {
     }
 
     private void writeResponse(ApiResponse response, RestResponseWrapper w, Object replyOrEvent) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        if (!w.annotation.mappingAllTo().equals("")) {
-            response.put(w.annotation.mappingAllTo(),
-                    PropertyUtils.getProperty(replyOrEvent, w.annotation.mappingAllTo()));
+        if (!w.annotation.allTo().equals("")) {
+            response.put(w.annotation.allTo(),
+                    PropertyUtils.getProperty(replyOrEvent, w.annotation.allTo()));
         } else {
             for (Map.Entry<String, String> e : w.responseMappingFields.entrySet()) {
                 response.put(e.getKey(),

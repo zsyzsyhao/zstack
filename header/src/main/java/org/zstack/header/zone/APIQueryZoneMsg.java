@@ -9,7 +9,6 @@ import org.zstack.header.rest.RestRequest;
 @RestRequest(
         path = "/zones",
         optionalPaths = {"/zones/{uuid}"},
-        parameterName = "null",
         responseClass = APIQueryZoneReply.class,
         method = HttpMethod.GET
 )

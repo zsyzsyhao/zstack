@@ -6,7 +6,7 @@ import org.zstack.header.rest.RestResponse;
 /**
  * Created by frank on 6/14/2015.
  */
-@RestResponse(mappingAllTo = "inventory")
+@RestResponse(allTo = "inventory")
 public class APIUpdateZoneEvent extends APIEvent {
     private ZoneInventory inventory;
 

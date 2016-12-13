@@ -94,7 +94,7 @@ import org.zstack.header.rest.RestResponse;
  * }
  * @since 0.1.0
  */
-@RestResponse(mappingAllTo = "inventory")
+@RestResponse(allTo = "inventory")
 public class APICreateVmInstanceEvent extends APIEvent {
     /**
      * @desc see :ref:`VmInstanceInventory`

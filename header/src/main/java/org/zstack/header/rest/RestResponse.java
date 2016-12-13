@@ -11,6 +11,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RestResponse {
-    String mappingAllTo() default "";
-    String[] mappingFields() default {};
+    String allTo() default "";
+    String[] fieldsTo() default {};
 }

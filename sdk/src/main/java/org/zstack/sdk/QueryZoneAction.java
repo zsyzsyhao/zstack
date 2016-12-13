@@ -55,7 +55,7 @@ public class QueryZoneAction extends QueryAction {
         info.path = "/zones";
         info.needSession = true;
         info.needPoll = false;
-        info.parameterName = "null";
+        info.parameterName = "";
         return info;
     }
 
