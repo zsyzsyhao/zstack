@@ -3,7 +3,6 @@ package org.zstack.core.aspect;
 import org.apache.commons.codec.binary.Base64;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
-import org.zstack.core.encrypt.PasswordEncrypt;
 import org.zstack.core.thread.SyncThreadSignature;
 import org.zstack.utils.Utils;
 import org.zstack.utils.logging.CLogger;
