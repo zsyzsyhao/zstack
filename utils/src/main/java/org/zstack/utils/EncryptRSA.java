@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
+import java.nio.charset.Charset;
 
 import javax.crypto.spec.DESedeKeySpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -27,7 +28,7 @@ public class EncryptRSA {
 	private static final String KEY_ALGORITHM = "AES";
 	private static final String DEFAULT_CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding";
 	private static final CLogger logger = Utils.getLogger(EncryptRSA.class);
-
+	private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
 	static{
 		if (key1 == null && key2 == null){
@@ -111,6 +112,15 @@ public class EncryptRSA {
 		return sb.toString();
 	}
 
+	private String decodeUTF8(byte[] bytes) {
+		return new String(bytes, UTF8_CHARSET);
+	}
+
+	private byte[] encodeUTF8(String string) {
+		return string.getBytes(UTF8_CHARSET);
+	}
+
+
 	public String encrypt1(String password) throws Exception{
 
 		System.out.println("key: "+showByteArray(key1));
@@ -121,21 +131,22 @@ public class EncryptRSA {
 
 		byte[] encryptData = encrypt(password.getBytes(),key2);
 		System.out.println("加密后数据： "+showByteArray(encryptData));
-		System.out.println("加密后数据： "+ Hex.encode(encryptData));
+		//System.out.println("加密后数据： "+ Hex.encode(encryptData));
 
-		return new String(encryptData, "utf-8");
+		System.out.println("加密后的数据是： "+decodeUTF8(encryptData));
+		return decodeUTF8(encryptData);
 
 	}
 
 	private Object decrypt1(String password) throws Exception{
 
-		byte[] srcBytes = password.getBytes("utf-8");
+		byte[] srcBytes = encodeUTF8(password);
 		byte[] desBytes = decrypt(srcBytes, key2);
 
 		System.out.println("解密后数据: byte[]:"+showByteArray(desBytes));
 		System.out.println("解密后数据: string:"+new String(desBytes));
 
-		return new String(desBytes, "utf-8");
+		return decodeUTF8(desBytes);
 	}
 
 
