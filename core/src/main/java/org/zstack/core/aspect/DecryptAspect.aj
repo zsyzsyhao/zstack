@@ -22,23 +22,21 @@ import java.security.interfaces.RSAPrivateKey;
 public aspect DecryptAspect {
 	private static final CLogger logger = Utils.getLogger(DecryptAspect.class);
 
-	Object around(Object entity) : this(entity) && execution(@org.zstack.header.vo.DECRYPT * *(..)){
-		if(entity instanceof PasswordEncrypt){
+	Object around(): execution(@org.zstack.header.vo.DECRYPT * *(..)){
+		Object value = proceed();
+		if (value != null){
 			try{
-				String temp = (String) ((PasswordEncrypt) entity).getPassword();
-				logger.debug(String.format("decrypted password is: %s", temp));
-				((PasswordEncrypt) entity).setPassword((String) decrypt(temp));
+				logger.debug(String.format("decrypted password is: %s", value));
+				value = (String) decrypt((String) value);
 			}catch(Exception e){
 				logger.debug(String.format("decrypt aspectj is error..."));
 				logger.debug(e.getMessage());
 				e.printStackTrace();
 			}
 
-
-
 		}
 
-		return proceed(entity);
+		return value;
 	}
 
 	private Object decrypt(String password) throws NoSuchAlgorithmException,
