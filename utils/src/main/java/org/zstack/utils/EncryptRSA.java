@@ -1,21 +1,12 @@
 package org.zstack.utils;
 
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
+
 import java.security.NoSuchAlgorithmException;
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
 import java.nio.charset.Charset;
-
-import javax.crypto.spec.DESedeKeySpec;
-import javax.crypto.spec.SecretKeySpec;
-
-import com.sun.org.apache.xml.internal.security.Init;
-import org.apache.commons.codec.binary.Base64;
-import org.bouncycastle.util.encoders.Hex;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.zstack.utils.logging.CLogger;
 
 
@@ -138,7 +129,7 @@ public class EncryptRSA {
 
 	}
 
-	private Object decrypt1(String password) throws Exception{
+	public Object decrypt1(String password) throws Exception{
 
 		byte[] srcBytes = encodeUTF8(password);
 		byte[] desBytes = decrypt(srcBytes, key2);
