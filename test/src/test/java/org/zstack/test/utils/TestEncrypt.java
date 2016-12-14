@@ -5,7 +5,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zstack.core.cloudbus.CloudBus;
 import org.zstack.core.componentloader.ComponentLoader;
-import org.zstack.core.encrypt.PasswordEncrypt;
 import org.zstack.header.vo.DECRYPT;
 import org.zstack.header.vo.ENCRYPT;
 import org.zstack.test.BeanConstructor;
@@ -14,7 +13,7 @@ import org.zstack.utils.EncryptRSA;
 /**
  * Created by mingjian.deng on 16/11/2.
  */
-public class TestEncrypt implements PasswordEncrypt {
+public class TestEncrypt {
     private String password;
     ComponentLoader loader;
     EncryptRSA rsa;
@@ -26,9 +25,6 @@ public class TestEncrypt implements PasswordEncrypt {
         rsa = loader.getComponent(EncryptRSA.class);
     }
 
-    public String getPassword() {
-        return password;
-    }
 
     public String getPassword(boolean encrypt){
         if(encrypt)
@@ -37,10 +33,6 @@ public class TestEncrypt implements PasswordEncrypt {
             return password;
     }
 
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
     @ENCRYPT
     public void setString(String password){
