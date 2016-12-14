@@ -1,219 +1,143 @@
 package org.zstack.utils;
 
-import org.zstack.utils.logging.CLogger;
-import org.zstack.utils.path.PathUtil;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import java.io.*;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-
-import org.apache.commons.codec.binary.Base64;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.Key;
+
+import javax.crypto.spec.DESedeKeySpec;
+import javax.crypto.spec.SecretKeySpec;
+
+import com.sun.org.apache.xml.internal.security.Init;
+import org.apache.commons.codec.binary.Base64;
+import org.bouncycastle.util.encoders.Hex;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.zstack.utils.logging.CLogger;
 
 
 /**
  * Created by mingjian.deng on 16/11/1.
  */
 public class EncryptRSA {
-	private static RSAPrivateKey privateKey;
-	private static RSAPublicKey publicKey;
+	private static byte[] key1;
+	private static Key key2;
+	private static final String KEY_ALGORITHM = "AES";
+	private static final String DEFAULT_CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding";
 	private static final CLogger logger = Utils.getLogger(EncryptRSA.class);
-	private static final String PRIVATE_RSA_KEY = "ansible/rsaKeys_java/RSAPrivate";
-	private static final String PUBLIC_RSA_KEY = "ansible/rsaKeys_java/RSAPublic";
 
-	static {
+
+	static{
+		if (key1 == null && key2 == null){
+			initSecretKey();
+		}
+	}
+
+	public static void initSecretKey() {
+		KeyGenerator kg = null;
 		try {
-			ObjectInputStream in1 = new ObjectInputStream(
-					new FileInputStream(
-							PathUtil.findFileOnClassPath(PRIVATE_RSA_KEY, true).getAbsolutePath()));
-			ObjectInputStream in2 = new ObjectInputStream(
-					new FileInputStream(
-							PathUtil.findFileOnClassPath(PUBLIC_RSA_KEY, true).getAbsolutePath()));
-			privateKey = (RSAPrivateKey) in1.readObject();
-			publicKey = (RSAPublicKey) in2.readObject();
-			in1.close();
-			in2.close();
-		} catch (FileNotFoundException e) {
-			logger.warn(e.getMessage());
-			logger.warn("start to generate a new but temporary RSAPrivateKey/RSAPublicKey pair...");
-			generate_rsa();
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-			logger.error("init RSAPrivateKey or RSAPublicKey failed, system exit...");
-			System.exit(1);
+			kg = KeyGenerator.getInstance(KEY_ALGORITHM);
+		} catch (NoSuchAlgorithmException e) {
+			logger.debug(e.getMessage());
+			e.printStackTrace();
 		}
+		//init keygenerator's size
+		kg.init(128);
+		//generator a key
+		SecretKey  secretKey = kg.generateKey();
+		key1 = secretKey.getEncoded();
+		key2 = toKey(key1);
 	}
 
-	private static void generate_rsa() {
-		try {
-			KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA");
-			keyPairGen.initialize(512);
-			KeyPair keyPair = keyPairGen.generateKeyPair();
-			ObjectOutputStream out1 = new ObjectOutputStream(
-					new FileOutputStream("/root/RSAPrivate"));
-			ObjectOutputStream out2 = new ObjectOutputStream(
-					new FileOutputStream("/root/RSAPublic"));
 
-			privateKey = (RSAPrivateKey) keyPair.getPrivate();
-			publicKey = (RSAPublicKey) keyPair.getPublic();
-			out1.writeObject(privateKey);
-			out2.writeObject(publicKey);
-			out1.close();
-			out2.close();
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-			logger.error("generate RSAPrivateKey or RSAPublicKey failed, system exit...");
-			System.exit(1);
-		}
+	private static Key toKey(byte[] key){
+		return new SecretKeySpec(key, KEY_ALGORITHM);
 	}
 
-	/**
-	 * encrypt
-	 *
-	 * @param publicKey
-	 * @param srcBytes
-	 * @return
-	 * @throws NoSuchAlgorithmException
-	 * @throws NoSuchPaddingException
-	 * @throws InvalidKeyException
-	 * @throws IllegalBlockSizeException
-	 * @throws BadPaddingException
-	 */
-	public byte[] encrypt(RSAPublicKey publicKey, byte[] srcBytes) throws NoSuchAlgorithmException,
-			NoSuchPaddingException,
-			InvalidKeyException,
-			IllegalBlockSizeException,
-			BadPaddingException,
-			IOException {
-		int length = srcBytes.length;
-		if (publicKey != null && length < 53) {
-			Cipher cipher = Cipher.getInstance("RSA");
-			cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-//            byte[] resultBytes = doEcrypt(cipher, srcBytes);
-			logger.debug("yyyyyyyy");
-			byte[] resultBytes = cipher.doFinal(srcBytes);
-			logger.debug("xxxxxxxx");
-			return resultBytes;
-		}
-		if (length >= 53) {
-			byte[] resultBytes = {11, 12};
-			return resultBytes;
-		}
-		return null;
+
+	public  byte[] encrypt(byte[] data,Key key) throws Exception{
+		return encrypt(data, key,DEFAULT_CIPHER_ALGORITHM);
 	}
 
-	public String encrypt1(String password) throws NoSuchAlgorithmException,
-			IllegalBlockSizeException, InvalidKeyException, BadPaddingException,
-			NoSuchPaddingException, IOException, ClassNotFoundException {
-		RSAPublicKey publicKey = getPublicKey();
+
+	public  byte[] encrypt(byte[] data,byte[] key) throws Exception{
+		return encrypt(data, key,DEFAULT_CIPHER_ALGORITHM);
+	}
+
+
+	public  byte[] encrypt(byte[] data,byte[] key,String cipherAlgorithm) throws Exception{
+		Key k = toKey(key);
+		return encrypt(data, k, cipherAlgorithm);
+	}
+
+	public  byte[] encrypt(byte[] data,Key key,String cipherAlgorithm) throws Exception{
+		//init
+		Cipher cipher = Cipher.getInstance(cipherAlgorithm);
+		cipher.init(Cipher.ENCRYPT_MODE, key);
+		return cipher.doFinal(data);
+	}
+
+	public  byte[] decrypt(byte[] data,byte[] key) throws Exception{
+		return decrypt(data, key,DEFAULT_CIPHER_ALGORITHM);
+	}
+
+	public  byte[] decrypt(byte[] data,Key key) throws Exception{
+		return decrypt(data, key,DEFAULT_CIPHER_ALGORITHM);
+	}
+
+	public  byte[] decrypt(byte[] data,byte[] key,String cipherAlgorithm) throws Exception{
+		Key k = toKey(key);
+		return decrypt(data, k, cipherAlgorithm);
+	}
+
+	public  byte[] decrypt(byte[] data,Key key,String cipherAlgorithm) throws Exception{
+		Cipher cipher = Cipher.getInstance(cipherAlgorithm);
+		cipher.init(Cipher.DECRYPT_MODE, key);
+		return cipher.doFinal(data);
+	}
+
+	private String  showByteArray(byte[] data){
+		if(null == data){
+			return null;
+		}
+		StringBuilder sb = new StringBuilder("{");
+		for(byte b:data){
+			sb.append(b).append(",");
+		}
+		sb.deleteCharAt(sb.length()-1);
+		sb.append("}");
+		return sb.toString();
+	}
+
+	public String encrypt1(String password) throws Exception{
+
+		System.out.println("key: "+showByteArray(key1));
+		System.out.println("加密前数据 string: "+password);
+		System.out.println("加密前数据： byte[]: "+showByteArray(password.getBytes()));
+
+		System.out.println("");
+
+		byte[] encryptData = encrypt(password.getBytes(),key2);
+		System.out.println("加密后数据： "+showByteArray(encryptData));
+		System.out.println("加密后数据： "+ Hex.encode(encryptData));
+
+		return new String(encryptData, "utf-8");
+
+	}
+
+	private Object decrypt1(String password) throws Exception{
+
 		byte[] srcBytes = password.getBytes("utf-8");
-		byte[] tmp = encrypt(publicKey, srcBytes);
-		byte[] desBytes = Base64.encodeBase64(tmp);
-		logger.debug(String.format("encrypt password: %s", new String(desBytes, "utf-8")));
-		// for test
-		RSAPrivateKey privateKey = getPrivateKey();
-		logger.debug(String.format("encrypt password: %s", new String(decrypt(privateKey, Base64.decodeBase64(desBytes)), "utf-8")));
+		byte[] desBytes = decrypt(srcBytes, key2);
+
+		System.out.println("解密后数据: byte[]:"+showByteArray(desBytes));
+		System.out.println("解密后数据: string:"+new String(desBytes));
+
 		return new String(desBytes, "utf-8");
 	}
 
-	/**
-	 * avoid "Data must not be longer than 117 bytes" while encrypt
-	 *
-	 * @param cipher
-	 * @param srcBytes
-	 * @return
-	 * @throws NoSuchAlgorithmException
-	 * @throws NoSuchPaddingException
-	 * @throws InvalidKeyException
-	 * @throws IllegalBlockSizeException
-	 * @throws BadPaddingException
-	 * @throws IOException
-	 */
-	private byte[] doEcrypt(Cipher cipher, byte[] srcBytes) throws IOException, BadPaddingException, IllegalBlockSizeException {
-		int inputLen = srcBytes.length;
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		int offSet = 0;
-		byte[] cache;
-		while (inputLen - offSet > 0) {
-			if (inputLen - offSet > 99) {
-				cache = cipher.doFinal(srcBytes, offSet, 99);
-			} else {
-				cache = cipher.doFinal(srcBytes, offSet, inputLen - offSet);
-			}
-			out.write(cache, 0, cache.length);
-			offSet += 99;
-		}
-		logger.debug(String.format("ddddddd: %d", out.toByteArray().length));
-		out.close();
-		return out.toByteArray();
-	}
-
-	/**
-	 * avoid "Data must not be longer than 128 bytes" while decrypt
-	 *
-	 * @param privateKey
-	 * @param srcBytes
-	 * @return
-	 * @throws NoSuchAlgorithmException
-	 * @throws NoSuchPaddingException
-	 * @throws InvalidKeyException
-	 * @throws IllegalBlockSizeException
-	 * @throws BadPaddingException
-	 */
-	public byte[] decrypt(RSAPrivateKey privateKey, byte[] srcBytes) throws BadPaddingException, IllegalBlockSizeException, IOException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-		if (privateKey != null) {
-			Cipher cipher = Cipher.getInstance("RSA");
-			cipher.init(Cipher.DECRYPT_MODE, privateKey);
-//            byte[] resultBytes = doDecrypt(cipher, srcBytes);
-			byte[] resultBytes = cipher.doFinal(srcBytes);
-			return resultBytes;
-		}
-		return null;
-	}
-
-	/**
-	 * @param cipher
-	 * @param srcBytes
-	 * @return
-	 * @throws IOException
-	 * @throws BadPaddingException
-	 * @throws IllegalBlockSizeException
-	 */
-	private byte[] doDecrypt(Cipher cipher, byte[] srcBytes) throws IOException, BadPaddingException, IllegalBlockSizeException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		int offSet = 0;
-		byte[] cache;
-		int inputLen = srcBytes.length;
-		logger.debug(String.format("ssssss: %d", srcBytes.length));
-		while (inputLen - offSet > 0) {
-			if (inputLen - offSet > 99) {
-				cache = cipher.update(srcBytes, offSet, 99);
-			} else {
-				cache = cipher.doFinal(srcBytes, offSet, inputLen - offSet);
-			}
-			out.write(cache, 0, cache.length);
-			offSet += 99;
-		}
-		out.close();
-		return out.toByteArray();
-	}
-
-	public RSAPrivateKey getPrivateKey() {
-		return privateKey;
-	}
-
-	public RSAPublicKey getPublicKey() {
-		return publicKey;
-	}
 
 
 }
