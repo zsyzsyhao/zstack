@@ -116,18 +116,10 @@ public class EncryptRSA {
 
 	public String encrypt1(String password) throws Exception{
 
-		System.out.println("key: "+showByteArray(key1));
-		System.out.println("加密前数据 string: "+password);
-		System.out.println("加密前数据： byte[]: "+showByteArray(password.getBytes()));
-
-		System.out.println("");
+		logger.debug(String.format("key: %s"+showByteArray(key1)));
 
 		byte[] encryptData = encrypt(password.getBytes(),key2);
-		System.out.println("加密后数据： "+showByteArray(encryptData));
-		//System.out.println("加密后数据： "+ Hex.encode(encryptData));
 		byte[] base64EncryptBytes = Base64.encodeBase64(encryptData);
-
-		System.out.println("加密后的数据是： "+decodeUTF8(base64EncryptBytes));
 		return decodeUTF8(base64EncryptBytes);
 
 	}
@@ -136,10 +128,6 @@ public class EncryptRSA {
 
 		byte[] srcBytes = encodeUTF8(password);
 		byte[] desBytes = decrypt(Base64.decodeBase64(srcBytes), key2);
-
-		System.out.println("解密后数据: byte[]:"+showByteArray(desBytes));
-		System.out.println("解密后数据: string:"+new String(desBytes));
-
 		return decodeUTF8(desBytes);
 	}
 
