@@ -7,8 +7,6 @@ import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
 import java.nio.charset.Charset;
-
-import org.apache.commons.codec.binary.Base64;
 import org.zstack.utils.logging.CLogger;
 
 
@@ -116,22 +114,19 @@ public class EncryptRSA {
 
 	public String encrypt1(String password) throws Exception{
 
-		logger.debug(String.format("key: %s"+showByteArray(key1)));
-
 		byte[] encryptData = encrypt(password.getBytes(),key2);
-		byte[] base64EncryptBytes = Base64.encodeBase64(encryptData);
-		return decodeUTF8(base64EncryptBytes);
+		return decodeUTF8(encryptData);
 
 	}
 
 	public Object decrypt1(String password) throws Exception{
 
 		byte[] srcBytes = encodeUTF8(password);
-		byte[] desBytes = decrypt(Base64.decodeBase64(srcBytes), key2);
+		byte[] desBytes = decrypt(srcBytes, key2);
+
 		return decodeUTF8(desBytes);
 	}
-
-
+	
 
 }
 
