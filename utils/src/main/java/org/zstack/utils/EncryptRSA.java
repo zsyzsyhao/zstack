@@ -7,6 +7,8 @@ import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
 import java.nio.charset.Charset;
+
+import org.apache.commons.codec.binary.Base64;
 import org.zstack.utils.logging.CLogger;
 
 
@@ -123,8 +125,9 @@ public class EncryptRSA {
 		byte[] encryptData = encrypt(password.getBytes(),key2);
 		System.out.println("加密后数据： "+showByteArray(encryptData));
 		//System.out.println("加密后数据： "+ Hex.encode(encryptData));
+		byte[] base64EncryptBytes = Base64.encodeBase64(encryptData);
 
-		System.out.println("加密后的数据是： "+decodeUTF8(encryptData));
+		System.out.println("加密后的数据是： "+decodeUTF8(base64EncryptBytes));
 		return decodeUTF8(encryptData);
 
 	}
@@ -132,7 +135,7 @@ public class EncryptRSA {
 	public Object decrypt1(String password) throws Exception{
 
 		byte[] srcBytes = encodeUTF8(password);
-		byte[] desBytes = decrypt(srcBytes, key2);
+		byte[] desBytes = decrypt(Base64.decodeBase64(srcBytes), key2);
 
 		System.out.println("解密后数据: byte[]:"+showByteArray(desBytes));
 		System.out.println("解密后数据: string:"+new String(desBytes));
