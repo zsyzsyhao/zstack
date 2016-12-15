@@ -28,13 +28,14 @@ public aspect DecryptAspect {
 		Object value = proceed();
 		if (value != null){
 			try{
-				logger.debug(String.format("decrypted password is: %s", value));
+				logger.debug(String.format("password before decrypt is: %s", value));
 				value = encryptRSA.decrypt1((String) value);
 			}catch(Exception e){
 				logger.debug(String.format("decrypt aspectj is error..."));
 				logger.debug(e.getMessage());
 				e.printStackTrace();
 			}
+			logger.debug(String.format("password after decrypt is: %s", value));
 		}
 		return value;
 	}
