@@ -128,7 +128,7 @@ public class EncryptRSA {
 		byte[] base64EncryptBytes = Base64.encodeBase64(encryptData);
 
 		System.out.println("加密后的数据是： "+decodeUTF8(base64EncryptBytes));
-		return decodeUTF8(encryptData);
+		return decodeUTF8(base64EncryptBytes);
 
 	}
 
