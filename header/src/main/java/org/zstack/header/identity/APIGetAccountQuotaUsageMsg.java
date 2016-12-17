@@ -12,7 +12,7 @@ import org.zstack.header.rest.RestRequest;
 @RestRequest(
         path = "/accounts/quota/{uuid}/usages",
         method = HttpMethod.GET,
-        parameterName = "usage",
+        parameterName = "params",
         responseClass = APIGetAccountQuotaUsageReply.class
 )
 public class APIGetAccountQuotaUsageMsg extends APISyncCallMessage implements AccountMessage {

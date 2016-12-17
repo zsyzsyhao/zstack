@@ -199,13 +199,25 @@ ${output.join("\n")}
             Field f = responseClass.getDeclaredField(at.allTo())
             addToFields(at.allTo(), f)
         } else {
-            at.fieldsTo().each { s ->
-                def ss = s.split("=")
-                def dst = ss[0].trim()
-                def src = ss[1].trim()
+            if (at.fieldsTo().length == 1 && at.fieldsTo()[0] == "all") {
+                for (Field f : responseClass.getDeclaredFields()) {
+                    addToFields(f.name, f)
+                }
+            } else {
+                at.fieldsTo().each { s ->
+                    def ss = s.split("=")
 
-                Field f = responseClass.getDeclaredField(src)
-                addToFields(dst, f)
+                    def dst, src
+                    if (ss.length == 2) {
+                        dst = ss[0].trim()
+                        src = ss[1].trim()
+                    } else {
+                        dst = src = ss[0]
+                    }
+
+                    Field f = responseClass.getDeclaredField(src)
+                    addToFields(dst, f)
+                }
             }
         }
         

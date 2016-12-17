@@ -12,7 +12,7 @@ import java.util.List;
         path = "/accounts/users/{userUuid}/policies",
         method = HttpMethod.POST,
         responseClass = APIAttachPoliciesToUserEvent.class,
-        parameterName = "policy"
+        parameterName = "params"
 )
 public class APIAttachPoliciesToUserMsg extends APIMessage implements AccountMessage {
     @APIParam(resourceType = UserVO.class, checkAccount = true, operationTarget = true)

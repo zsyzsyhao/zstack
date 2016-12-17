@@ -9,7 +9,7 @@ import org.zstack.header.rest.RestRequest;
 @RestRequest(
         path = "/accounts/users",
         method = HttpMethod.POST,
-        parameterName = "user",
+        parameterName = "params",
         responseClass = APICreateUserEvent.class
 )
 public class APICreateUserMsg extends APICreateMessage implements AccountMessage {

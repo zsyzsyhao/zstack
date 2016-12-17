@@ -3,23 +3,26 @@ package org.zstack.sdk;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CreateUserGroupAction extends AbstractAction {
+public class GetCpuMemoryCapacityAction extends AbstractAction {
 
     private static final HashMap<String, Parameter> parameterMap = new HashMap<>();
 
     public static class Result {
         public ErrorCode error;
-        public CreateUserGroupResult value;
+        public GetCpuMemoryCapacityResult value;
     }
 
-    @Param(required = true, maxLength = 255, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
-    public java.lang.String name;
+    @Param(required = false, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
+    public java.util.List zoneUuids;
 
-    @Param(required = false, maxLength = 2048, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
-    public java.lang.String description;
+    @Param(required = false, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
+    public java.util.List clusterUuids;
+
+    @Param(required = false, nonempty = false, nullElements = false, emptyString = true, noTrim = false)
+    public java.util.List hostUuids;
 
     @Param(required = false)
-    public java.lang.String resourceUuid;
+    public boolean all;
 
     @Param(required = false)
     public java.util.List systemTags;
@@ -30,10 +33,6 @@ public class CreateUserGroupAction extends AbstractAction {
     @Param(required = true)
     public String sessionId;
 
-    public long timeout;
-    
-    public long pollingInterval;
-
 
     public Result call() {
         ApiResult res = ZSClient.call(this);
@@ -43,8 +42,8 @@ public class CreateUserGroupAction extends AbstractAction {
             return ret;
         }
         
-        CreateUserGroupResult value = res.getResult(CreateUserGroupResult.class);
-        ret.value = value == null ? new CreateUserGroupResult() : value;
+        GetCpuMemoryCapacityResult value = res.getResult(GetCpuMemoryCapacityResult.class);
+        ret.value = value == null ? new GetCpuMemoryCapacityResult() : value;
         return ret;
     }
 
@@ -59,8 +58,8 @@ public class CreateUserGroupAction extends AbstractAction {
                     return;
                 }
                 
-                CreateUserGroupResult value = res.getResult(CreateUserGroupResult.class);
-                ret.value = value == null ? new CreateUserGroupResult() : value;
+                GetCpuMemoryCapacityResult value = res.getResult(GetCpuMemoryCapacityResult.class);
+                ret.value = value == null ? new GetCpuMemoryCapacityResult() : value;
                 completion.complete(ret);
             }
         });
@@ -72,10 +71,10 @@ public class CreateUserGroupAction extends AbstractAction {
 
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
-        info.httpMethod = "POST";
-        info.path = "/accounts/groups";
+        info.httpMethod = "GET";
+        info.path = "/hosts/capacities/cpu-memory";
         info.needSession = true;
-        info.needPoll = true;
+        info.needPoll = false;
         info.parameterName = "params";
         return info;
     }

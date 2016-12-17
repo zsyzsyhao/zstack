@@ -91,7 +91,7 @@ public class AddKVMHostAction extends AbstractAction {
         info.path = "/hosts/kvm";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "host";
+        info.parameterName = "params";
         return info;
     }
 

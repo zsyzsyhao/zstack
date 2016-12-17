@@ -39,7 +39,7 @@ import org.zstack.header.zone.ZoneVO;
  */
 @RestRequest(
         path = "/clusters",
-        parameterName = "cluster",
+        parameterName = "params",
         method = HttpMethod.POST,
         responseClass = APICreateClusterEvent.class
 )

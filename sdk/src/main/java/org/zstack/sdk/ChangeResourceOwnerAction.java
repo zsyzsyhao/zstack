@@ -73,7 +73,7 @@ public class ChangeResourceOwnerAction extends AbstractAction {
         info.path = "/account/{accountUuid}/resources";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "resource";
+        info.parameterName = "params";
         return info;
     }
 

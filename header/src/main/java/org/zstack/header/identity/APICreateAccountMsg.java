@@ -9,7 +9,7 @@ import org.zstack.header.zone.APICreateZoneEvent;
 @RestRequest(
         path = "/accounts",
         method = HttpMethod.POST,
-        parameterName = "account",
+        parameterName = "params",
         responseClass = APICreateZoneEvent.class
 )
 public class APICreateAccountMsg extends APICreateMessage {

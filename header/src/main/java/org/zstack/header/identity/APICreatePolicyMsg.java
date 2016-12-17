@@ -14,7 +14,7 @@ import java.util.List;
         path = "/accounts/policies",
         method = HttpMethod.POST,
         responseClass = APICreatePolicyEvent.class,
-        parameterName = "policy"
+        parameterName = "params"
 )
 public class APICreatePolicyMsg extends APICreateMessage implements AccountMessage {
     @APIParam(maxLength = 255)

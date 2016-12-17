@@ -73,7 +73,7 @@ public class DeleteUserGroupAction extends AbstractAction {
         info.path = "/accounts/groups/{uuid}";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "group";
+        info.parameterName = "params";
         return info;
     }
 

@@ -57,7 +57,7 @@ import org.zstack.header.rest.RestRequest;
 @RestRequest(
         path = "/hosts/kvm",
         method = HttpMethod.POST,
-        parameterName = "host",
+        parameterName = "params",
         responseClass = APIAddHostEvent.class
 )
 public class APIAddKVMHostMsg extends APIAddHostMsg {

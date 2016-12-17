@@ -10,7 +10,7 @@ import org.zstack.header.rest.RestRequest;
         path = "/accounts/groups",
         method = HttpMethod.POST,
         responseClass = APICreateUserGroupEvent.class,
-        parameterName = "group"
+        parameterName = "params"
 )
 public class APICreateUserGroupMsg extends APICreateMessage implements AccountMessage {
     @APIParam(maxLength = 255)

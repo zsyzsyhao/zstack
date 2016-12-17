@@ -82,7 +82,7 @@ public class AddHostAction extends AbstractAction {
         info.path = "/hosts";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "host";
+        info.parameterName = "params";
         return info;
     }
 

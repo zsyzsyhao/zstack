@@ -88,7 +88,7 @@ public class AddSimulatorHostAction extends AbstractAction {
         info.path = "/hosts/simulators";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "host";
+        info.parameterName = "params";
         return info;
     }
 

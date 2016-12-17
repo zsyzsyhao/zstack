@@ -66,7 +66,7 @@ public class GetAccountQuotaUsageAction extends AbstractAction {
         info.path = "/accounts/quota/{uuid}/usages";
         info.needSession = true;
         info.needPoll = false;
-        info.parameterName = "usage";
+        info.parameterName = "params";
         return info;
     }
 

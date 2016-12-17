@@ -73,7 +73,7 @@ public class DeleteUserAction extends AbstractAction {
         info.path = "/accounts/users/{uuid}";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "user";
+        info.parameterName = "params";
         return info;
     }
 

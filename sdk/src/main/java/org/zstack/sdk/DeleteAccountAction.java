@@ -73,7 +73,7 @@ public class DeleteAccountAction extends AbstractAction {
         info.path = "/accounts/{uuid}";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "account";
+        info.parameterName = "params";
         return info;
     }
 

@@ -73,7 +73,7 @@ public class DeletePolicyAction extends AbstractAction {
         info.path = "/accounts/policies/{uuid}";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "policy";
+        info.parameterName = "params";
         return info;
     }
 

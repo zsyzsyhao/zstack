@@ -79,7 +79,7 @@ public class CreatePolicyAction extends AbstractAction {
         info.path = "/accounts/policies";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "policy";
+        info.parameterName = "params";
         return info;
     }
 

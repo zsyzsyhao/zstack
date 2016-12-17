@@ -85,7 +85,7 @@ public class CreateClusterAction extends AbstractAction {
         info.path = "/clusters";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "cluster";
+        info.parameterName = "params";
         return info;
     }
 

@@ -12,7 +12,7 @@ import org.zstack.header.rest.RestRequest;
         path = "/account/{accountUuid}/resources",
         method = HttpMethod.POST,
         responseClass = APIChangeResourceOwnerEvent.class,
-        parameterName = "resource"
+        parameterName = "params"
 )
 public class APIChangeResourceOwnerMsg extends APIMessage {
     @APIParam(resourceType = AccountVO.class)

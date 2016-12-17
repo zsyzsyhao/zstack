@@ -9,7 +9,7 @@ import org.zstack.header.rest.RestRequest;
 @RestRequest(
         path = "/hosts",
         method = HttpMethod.POST,
-        parameterName = "host",
+        parameterName = "params",
         responseClass = APIAddHostEvent.class
 )
 public abstract class APIAddHostMsg extends APICreateMessage implements AddHostMessage {

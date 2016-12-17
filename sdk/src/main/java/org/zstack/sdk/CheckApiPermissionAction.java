@@ -69,7 +69,7 @@ public class CheckApiPermissionAction extends AbstractAction {
         info.path = "/accounts/permissions/actions";
         info.needSession = true;
         info.needPoll = false;
-        info.parameterName = "permission";
+        info.parameterName = "params";
         return info;
     }
 

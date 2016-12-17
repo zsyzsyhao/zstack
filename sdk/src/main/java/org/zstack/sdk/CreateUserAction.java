@@ -79,7 +79,7 @@ public class CreateUserAction extends AbstractAction {
         info.path = "/accounts/users";
         info.needSession = true;
         info.needPoll = true;
-        info.parameterName = "user";
+        info.parameterName = "params";
         return info;
     }
 

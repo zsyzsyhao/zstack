@@ -13,7 +13,7 @@ import org.zstack.header.rest.RestRequest;
         path = "/accounts/{uuid}",
         method = HttpMethod.DELETE,
         responseClass = APIDeleteAccountEvent.class,
-        parameterName = "account"
+        parameterName = "params"
 )
 public class APIDeleteAccountMsg extends APIDeleteMessage implements AccountMessage {
     @APIParam

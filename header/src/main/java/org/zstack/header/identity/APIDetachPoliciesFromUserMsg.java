@@ -14,7 +14,7 @@ import java.util.List;
 @RestRequest(
         path = "/accounts/users/{userUuid}/policies",
         method = HttpMethod.DELETE,
-        parameterName = "policy",
+        parameterName = "params",
         responseClass = APIDetachPoliciesFromUserEvent.class
 )
 public class APIDetachPoliciesFromUserMsg extends APIMessage implements AccountMessage {
