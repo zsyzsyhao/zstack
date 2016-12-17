@@ -6,6 +6,7 @@ import org.zstack.core.Platform
 import org.zstack.header.exception.CloudRuntimeException
 import org.zstack.header.rest.APINoSee
 import org.zstack.header.rest.RestResponse
+import org.zstack.header.rest.SDK
 import org.zstack.rest.sdk.JavaSdkTemplate
 import org.zstack.rest.sdk.SdkFile
 import org.zstack.utils.FieldUtils
@@ -103,6 +104,15 @@ ${dstToSrc.join("\n")}
         resolveAllClasses()
     }
 
+    def getTargetClassName(Class clz) {
+        SDK at = clz.getAnnotation(SDK.class)
+        if (at == null || at.sdkClassName().isEmpty()) {
+            return clz.simpleName
+        }
+
+        return at.sdkClassName()
+    }
+
     def resolveClass(Class clz) {
         if (sdkFileMap.containsKey(clz)) {
             return
@@ -113,24 +123,41 @@ ${dstToSrc.join("\n")}
         }
 
         def output = []
-        for (Field f : clz.getDeclaredFields()) {
-            if (f.isAnnotationPresent(APINoSee.class)) {
-                continue
-            }
 
-            output.add(makeFieldText(f.name, f))
+        if (!Enum.class.isAssignableFrom(clz)) {
+            for (Field f : clz.getDeclaredFields()) {
+                if (f.isAnnotationPresent(APINoSee.class)) {
+                    continue
+                }
+
+                output.add(makeFieldText(f.name, f))
+            }
+        } else {
+            for (Enum e : clz.getEnumConstants()) {
+                output.add("\t${e.name()},")
+            }
         }
 
         SdkFile file = new SdkFile()
-        file.fileName = "${clz.simpleName}.java"
-        file.content = """package org.zstack.sdk;
+        file.fileName = "${getTargetClassName(clz)}.java"
+        if (!Enum.class.isAssignableFrom(clz)) {
+            file.content = """package org.zstack.sdk;
 
-public class ${clz.simpleName} ${Object.class.isAssignableFrom(clz.superclass) ? "" : clz.superclass.simpleName} {
+public class ${getTargetClassName(clz)} ${Object.class.isAssignableFrom(clz.superclass) ? "" : clz.superclass.simpleName} {
 
 ${output.join("\n")}
 }
 """
-        sourceClassMap[clz.name] = "org.zstack.sdk.${clz.simpleName}"
+        } else {
+            file.content = """package org.zstack.sdk;
+
+public enum ${getTargetClassName(clz)} {
+${output.join("\n")}
+}
+"""
+        }
+
+        sourceClassMap[clz.name] = "org.zstack.sdk.${getTargetClassName(clz)}"
         sdkFileMap.put(clz, file)
     }
 
@@ -207,15 +234,15 @@ ${output.join("\n")}
 
     def makeFieldText(String fname, Field field) {
         // zstack type
-        if (isZStackClass(field.type)) {
+        if (isZStackClass(field.type) || Enum.class.isAssignableFrom(field.type)) {
             addToLaterResolvedClassesIfNeed(field.type)
 
             return """\
-    public ${field.type.simpleName} ${fname};
-    public void set${StringUtils.capitalize(fname)}(${field.type.simpleName} ${fname}) {
+    public ${getTargetClassName(field.type)} ${fname};
+    public void set${StringUtils.capitalize(fname)}(${getTargetClassName(field.type)} ${fname}) {
         this.${fname} = ${fname};
     }
-    public ${field.type.simpleName} get${StringUtils.capitalize(fname)}() {
+    public ${getTargetClassName(field.type)} get${StringUtils.capitalize(fname)}() {
         return this.${fname};
     }
 """
@@ -230,12 +257,14 @@ ${output.join("\n")}
                     addToLaterResolvedClassesIfNeed(genericType)
                 }
 
+                String genericClassName = getTargetClassName(genericType)
+
                 return """\
-    public ${field.type.name}<${genericType.simpleName}> ${fname};
-    public void set${StringUtils.capitalize(fname)}(${field.type.name}<${genericType.simpleName}> ${fname}) {
+    public ${field.type.name}<${genericClassName}> ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.name}<${genericClassName}> ${fname}) {
         this.${fname} = ${fname};
     }
-    public ${field.type.name}<${genericType.simpleName}> get${StringUtils.capitalize(fname)}() {
+    public ${field.type.name}<${genericClassName}> get${StringUtils.capitalize(fname)}() {
         return this.${fname};
     }
 """
@@ -258,12 +287,14 @@ ${output.join("\n")}
                     addToLaterResolvedClassesIfNeed(genericType)
                 }
 
+                String genericClassName = getTargetClassName(genericType)
+
                 return """\
-    public ${field.type.name}<String, ${genericType.simpleName}> ${fname};
-    public void set${StringUtils.capitalize(fname)}(${field.type.name}<String, ${genericType.simpleName}> ${fname}) {
+    public ${field.type.name}<String, ${genericClassName}> ${fname};
+    public void set${StringUtils.capitalize(fname)}(${field.type.name}<String, ${genericClassName}> ${fname}) {
         this.${fname} = ${fname};
     }
-    public ${field.type.name}<String, ${genericType.simpleName}> get${StringUtils.capitalize(fname)}() {
+    public ${field.type.name}<String, ${genericClassName}> get${StringUtils.capitalize(fname)}() {
         return this.${fname};
     }
 """

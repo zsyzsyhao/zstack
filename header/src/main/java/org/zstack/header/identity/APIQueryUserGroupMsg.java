@@ -15,7 +15,7 @@ import org.zstack.header.rest.RestRequest;
         path = "/accounts/groups",
         optionalPaths = "/accounts/groups/{uuid}",
         method = HttpMethod.GET,
-        responseClass = APIQueryUserGroupMsg.class
+        responseClass = APIQueryUserGroupReply.class
 )
 public class APIQueryUserGroupMsg extends APIQueryMessage {
 }

@@ -6,6 +6,9 @@ usage() {
 
 sdk() {
     set -u
+    cd sdk/src/main/java/org/zstack/sdk/
+    find . -type f  | grep -E -v "(ZSClient|ZSConfig|ApiException|AsyncRestState|Completion|Constants|ErrorCode|ErrorCodeList|InternalCompletion|ApiResult|Param|RestInfo|AbstractAction|QueryAction).java" | xargs rm -f
+    cd -
     rm -rf ~/zstack-sdk/java
     cd test
     mvn test -Dtest=TestGenerateSDK

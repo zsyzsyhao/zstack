@@ -9,7 +9,7 @@ public class QueryUserGroupAction extends QueryAction {
 
     public static class Result {
         public ErrorCode error;
-        public QueryUserGroupMsgResult value;
+        public QueryUserGroupResult value;
     }
 
 
@@ -22,8 +22,8 @@ public class QueryUserGroupAction extends QueryAction {
             return ret;
         }
         
-        QueryUserGroupMsgResult value = res.getResult(QueryUserGroupMsgResult.class);
-        ret.value = value == null ? new QueryUserGroupMsgResult() : value;
+        QueryUserGroupResult value = res.getResult(QueryUserGroupResult.class);
+        ret.value = value == null ? new QueryUserGroupResult() : value;
         return ret;
     }
 
@@ -38,8 +38,8 @@ public class QueryUserGroupAction extends QueryAction {
                     return;
                 }
                 
-                QueryUserGroupMsgResult value = res.getResult(QueryUserGroupMsgResult.class);
-                ret.value = value == null ? new QueryUserGroupMsgResult() : value;
+                QueryUserGroupResult value = res.getResult(QueryUserGroupResult.class);
+                ret.value = value == null ? new QueryUserGroupResult() : value;
                 completion.complete(ret);
             }
         });

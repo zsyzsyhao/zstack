@@ -1,6 +1,6 @@
 package org.zstack.sdk;
 
-public class Statement  {
+public class PolicyStatement  {
 
     public java.lang.String name;
     public void setName(java.lang.String name) {
@@ -10,11 +10,11 @@ public class Statement  {
         return this.name;
     }
 
-    public StatementEffect effect;
-    public void setEffect(StatementEffect effect) {
+    public PolicyStatementEffect effect;
+    public void setEffect(PolicyStatementEffect effect) {
         this.effect = effect;
     }
-    public StatementEffect getEffect() {
+    public PolicyStatementEffect getEffect() {
         return this.effect;
     }
 
