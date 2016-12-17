@@ -295,7 +295,7 @@ public class ZSClient {
                         count += interval;
                         if (count >= expiredTime) {
                             ApiResult res = new ApiResult();
-                            res.error = new ErrorCode(
+                            res.error = errorCode(
                                     Constants.POLLING_TIMEOUT_ERROR,
                                     "timeout of polling async API result",
                                     String.format("polling result of api[%s] timeout after %s ms", action.getClass().getSimpleName(), timeout)
@@ -307,7 +307,7 @@ public class ZSClient {
                         //TODO: logging
 
                         ApiResult res = new ApiResult();
-                        res.error = new ErrorCode(
+                        res.error = errorCode(
                                 Constants.INTERNAL_ERROR,
                                 "an internal error happened",
                                 e.getMessage()
@@ -317,6 +317,14 @@ public class ZSClient {
                     }
                 }
             }, 0, i);
+        }
+
+        private ErrorCode errorCode(String id, String s, String d) {
+            ErrorCode err = new ErrorCode();
+            err.code = id;
+            err.description = s;
+            err.details = d;
+            return err;
         }
 
         private ApiResult syncPollResult(String url) {
@@ -359,7 +367,7 @@ public class ZSClient {
             }
 
             ApiResult res = new ApiResult();
-            res.error = new ErrorCode(
+            res.error = errorCode(
                     Constants.POLLING_TIMEOUT_ERROR,
                     "timeout of polling async API result",
                     String.format("polling result of api[%s] timeout after %s ms", action.getClass().getSimpleName(), timeout)
@@ -383,7 +391,7 @@ public class ZSClient {
 
         private ApiResult httpError(int code, String details) {
             ApiResult res = new ApiResult();
-            res.error = new ErrorCode(
+            res.error = errorCode(
                     Constants.HTTP_ERROR,
                     String.format("the http status code[%s] indicates a failure happened", code),
                     details

@@ -12,7 +12,7 @@ import java.util.List;
 
 @Action(category = ImageConstant.ACTION_CATEGORY)
 @RestRequest(
-        path = "/images/root-volumes/{rootVolumeUuid}",
+        path = "/images/root-volume-templates/from/volumes/{rootVolumeUuid}",
         method = HttpMethod.POST,
         responseClass = APICreateRootVolumeTemplateFromRootVolumeEvent.class,
         parameterName = "params"

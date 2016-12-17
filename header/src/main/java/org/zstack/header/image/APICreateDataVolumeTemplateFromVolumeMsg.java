@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Action(category = ImageConstant.ACTION_CATEGORY)
 @RestRequest(
-        path = "/images/data-volumes/{volumeUuid}",
+        path = "/images/data-volume-templates/from/volumes/{volumeUuid}",
         method = HttpMethod.POST,
         parameterName = "params",
         responseClass = APICreateDataVolumeTemplateFromVolumeEvent.class
