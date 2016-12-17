@@ -8,6 +8,7 @@ import org.zstack.header.message.APISyncCallMessage
 import org.zstack.header.query.APIQueryMessage
 import org.zstack.header.rest.APINoSee
 import org.zstack.header.rest.RestRequest
+import org.zstack.header.rest.SDK
 import org.zstack.rest.sdk.JavaSdkTemplate
 import org.zstack.rest.sdk.SdkFile
 import org.zstack.utils.FieldUtils
@@ -129,7 +130,7 @@ class SdkApiTemplate implements JavaSdkTemplate {
         return output.join("\n")
     }
 
-    def generateMethods() {
+    def generateMethods(String path) {
         def ms = []
         ms.add("""\
     public Result call() {
@@ -176,7 +177,7 @@ class SdkApiTemplate implements JavaSdkTemplate {
     RestInfo getRestInfo() {
         RestInfo info = new RestInfo();
         info.httpMethod = "${requestAnnotation.method().name()}";
-        info.path = "${requestAnnotation.path()}";
+        info.path = "${path}";
         info.needSession = ${!apiMessageClass.isAnnotationPresent(SuppressCredentialCheck.class)};
         info.needPoll = ${!APISyncCallMessage.class.isAssignableFrom(apiMessageClass)};
         info.parameterName = "${requestAnnotation.isAction() ? StringUtils.uncapitalize(baseName) : requestAnnotation.parameterName()}";
@@ -187,15 +188,15 @@ class SdkApiTemplate implements JavaSdkTemplate {
         return ms.join("\n")
     }
 
-    def generateAction() {
+    def generateAction(String clzName, String path) {
         def f = new SdkFile()
-        f.fileName = "${generateClassName()}.java"
+        f.fileName = "${clzName}.java"
         f.content = """package org.zstack.sdk;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class ${generateClassName()} extends ${isQueryApi ? "QueryAction" : "AbstractAction"} {
+public class ${clzName} extends ${isQueryApi ? "QueryAction" : "AbstractAction"} {
 
     private static final HashMap<String, Parameter> parameterMap = new HashMap<>();
 
@@ -206,15 +207,50 @@ public class ${generateClassName()} extends ${isQueryApi ? "QueryAction" : "Abst
 
 ${generateFields()}
 
-${generateMethods()}
+${generateMethods(path)}
 }
 """.toString()
 
         return f
     }
 
+    def generateAction() {
+        SDK sdk = apiMessageClass.getAnnotation(SDK.class)
+        if (sdk != null && sdk.actionsMapping().length != 0) {
+            def ret = []
+
+            for (String ap : sdk.actionsMapping()) {
+                String[] aps = ap.split("=")
+                if (aps.length != 2) {
+                    throw new CloudRuntimeException("Invalid actionMapping[${ap}] of the class[${apiMessageClass.name}]," +
+                            "an action mapping must be in format of actionName=restfulPath")
+                }
+
+                String aname = aps[0].trim()
+                String restPath = aps[1].trim()
+
+                if (!requestAnnotation.optionalPaths().contains(restPath)) {
+                    throw new CloudRuntimeException("Cannot find ${restPath} in the 'optionalPaths' of the @RestPath of " +
+                            "the class[${apiMessageClass.name}]")
+                }
+
+                aname = StringUtils.capitalize(aname)
+
+                ret.add(generateAction("${aname}Action", restPath))
+            }
+
+            return ret
+        } else {
+            if (requestAnnotation.path() == "null") {
+                throw new CloudRuntimeException("'path' is set to 'null' but no @SDK found on the class[${apiMessageClass.name}]")
+            }
+
+            return [generateAction(generateClassName(), requestAnnotation.path())]
+        }
+    }
+
     @Override
     List<SdkFile> generate() {
-        return [generateAction()]
+        return generateAction()
     }
 }

@@ -1,123 +1,53 @@
 package org.zstack.sdk;
 
-import java.io.Serializable;
-import java.util.LinkedHashMap;
+public class ErrorCode  {
 
-public class ErrorCode implements Serializable, Cloneable {
-    private String code;
-    private String description;
-    private String details;
-    private String elaboration;
-    private ErrorCode cause;
-    private LinkedHashMap opaque;
-
-    public LinkedHashMap getOpaque() {
-        return opaque;
-    }
-
-    public void setOpaque(LinkedHashMap opaque) {
-        this.opaque = opaque;
-    }
-
-    public void putToOpaque(String key, Object value) {
-        if (opaque == null) {
-            opaque = new LinkedHashMap();
-        }
-        opaque.put(key, value);
-    }
-
-    public Object getFromOpaque(String key) {
-        return opaque == null ? null : opaque.get(key);
-    }
-
-    public ErrorCode() {
-    }
-
-    public ErrorCode(String code, String description) {
-        super();
+    public java.lang.String code;
+    public void setCode(java.lang.String code) {
         this.code = code;
+    }
+    public java.lang.String getCode() {
+        return this.code;
+    }
+
+    public java.lang.String description;
+    public void setDescription(java.lang.String description) {
         this.description = description;
     }
+    public java.lang.String getDescription() {
+        return this.description;
+    }
 
-    public ErrorCode(String code, String description, String details) {
-        super();
-        this.code = code;
-        this.description = description;
+    public java.lang.String details;
+    public void setDetails(java.lang.String details) {
         this.details = details;
     }
-
-    public ErrorCode(ErrorCode other) {
-        this.code = other.code;
-        this.description = other.description;
-        this.details = other.details;
-        this.elaboration = other.elaboration;
-        this.cause = other.cause;
+    public java.lang.String getDetails() {
+        return this.details;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public java.lang.String elaboration;
+    public void setElaboration(java.lang.String elaboration) {
+        this.elaboration = elaboration;
+    }
+    public java.lang.String getElaboration() {
+        return this.elaboration;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public String getDetails() {
-        return details;
-    }
-
-    public void setDetails(String details) {
-        this.details = details;
-    }
-
-    @Override
-    public String toString() {
-        return ZSClient.gson.toJson(this);
-    }
-
-    public static ErrorCode fromString(String err) {
-        String arr = err.replace("ErrorCode", "").replace("[", "").replace("]", "").trim();
-        try {
-            String[] items = arr.split(",");
-            ErrorCode code = new ErrorCode(items[0].split("=")[1].trim(), items[1].split("=")[1].trim());
-            code.setDetails(items[2].split("=")[1].trim());
-            return code;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(String.format("Cannot deserialize string[%s] to ErrorCode", err), e);
-        }
-    }
-
-    public ErrorCode getCause() {
-        return cause;
-    }
-
+    public ErrorCode cause;
     public void setCause(ErrorCode cause) {
         this.cause = cause;
     }
-
-    public String getElaboration() {
-        return elaboration;
+    public ErrorCode getCause() {
+        return this.cause;
     }
 
-    public void setElaboration(String elaboration) {
-        this.elaboration = elaboration;
+    public java.util.LinkedHashMap opaque;
+    public void setOpaque(java.util.LinkedHashMap opaque) {
+        this.opaque = opaque;
+    }
+    public java.util.LinkedHashMap getOpaque() {
+        return this.opaque;
     }
 
-    public boolean isError(Enum... errorEnums) {
-        for (Enum e : errorEnums) {
-            if (e.toString().equals(getCode())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

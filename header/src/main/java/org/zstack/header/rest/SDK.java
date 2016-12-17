@@ -12,4 +12,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SDK {
     String sdkClassName() default "";
+    String[] actionsMapping() default {};
 }

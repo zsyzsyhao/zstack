@@ -46,6 +46,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLDecoder;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by xing5 on 2016/12/7.
@@ -158,6 +159,7 @@ public class RestServer implements Component, CloudBusEventListener {
             responseAnnotation = (RestResponse) apiResponseClass.getAnnotation(RestResponse.class);
             DebugUtils.Assert(responseAnnotation != null, String.format("%s must be annotated with @RestResponse", apiResponseClass));
             Collections.addAll(optionalPaths, at.optionalPaths());
+            optionalPaths = optionalPaths.stream().map( p -> String.format("%s%s", RestConstants.API_VERSION, p)).collect(Collectors.toList());
 
             if (at.isAction()) {
                 actionName = StringUtils.removeStart(apiClass.getSimpleName(), "API");
@@ -652,7 +654,9 @@ public class RestServer implements Component, CloudBusEventListener {
             Api api = new Api(clz, at);
 
             List<String> paths = new ArrayList<>();
-            paths.add(api.path);
+            if (!"null".equals(api.path)) {
+                paths.add(api.path);
+            }
             paths.addAll(api.optionalPaths);
 
             for (String path : paths) {
