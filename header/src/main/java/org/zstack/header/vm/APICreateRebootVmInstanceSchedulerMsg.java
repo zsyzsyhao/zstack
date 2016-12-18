@@ -12,7 +12,7 @@ import org.zstack.header.rest.RestRequest;
 
 @Action(category = VmInstanceConstant.ACTION_CATEGORY)
 @RestRequest(
-        path = "/vm-instances/{vmUuid}/reboot-schedulers",
+        path = "/vm-instances/{vmUuid}/schedulers/rebooting",
         parameterName = "params",
         method = HttpMethod.POST,
         responseClass = APICreateRebootVmInstanceSchedulerEvent.class

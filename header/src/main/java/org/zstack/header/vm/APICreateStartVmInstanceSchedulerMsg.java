@@ -13,7 +13,7 @@ import org.zstack.header.rest.RestRequest;
  */
 @Action(category = VmInstanceConstant.ACTION_CATEGORY)
 @RestRequest(
-        path = "/vm-instances/{vmUuid}/start-schedulers",
+        path = "/vm-instances/{vmUuid}/schedulers/starting",
         method = HttpMethod.POST,
         parameterName = "params",
         responseClass = APICreateStartVmInstanceSchedulerEvent.class

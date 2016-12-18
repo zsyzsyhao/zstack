@@ -11,7 +11,7 @@ import org.zstack.header.rest.RestRequest;
  */
 @Action(category = VmInstanceConstant.ACTION_CATEGORY)
 @RestRequest(
-        path = "/vm-instances/{vmUuid}/stop-schedulers",
+        path = "/vm-instances/{vmUuid}/schedulers/stopping",
         responseClass = APICreateStopVmInstanceSchedulerEvent.class,
         method = HttpMethod.POST,
         parameterName = "params"
