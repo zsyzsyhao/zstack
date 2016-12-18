@@ -3682,7 +3682,7 @@ public class Api implements CloudBusEventListener {
         msg.setMonPort(inv.getMonPort());
         ApiSender sender = new ApiSender();
         sender.setTimeout(timeout);
-        APIUpdateMonToCephBackupStorageEvent evt = sender.send(msg, APIUpdateMonToCephBackupStorageEvent.class);
+        APIUpdateCephBackupStorageMonEvent evt = sender.send(msg, APIUpdateCephBackupStorageMonEvent.class);
         return evt.getInventory();
     }
 
@@ -3697,7 +3697,7 @@ public class Api implements CloudBusEventListener {
         msg.setMonPort(inv.getMonPort());
         ApiSender sender = new ApiSender();
         sender.setTimeout(timeout);
-        APIUpdateMonToCephPrimaryStorageEvent evt = sender.send(msg, APIUpdateMonToCephPrimaryStorageEvent.class);
+        APIUpdateCephPrimaryStorageMonEvent evt = sender.send(msg, APIUpdateCephPrimaryStorageMonEvent.class);
         return evt.getInventory();
     }
 

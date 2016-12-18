@@ -5,13 +5,13 @@ import org.zstack.header.message.APIEvent;
 /**
  * Created by Mei Lei on 6/6/2016.
  */
-public class APIUpdateMonToCephBackupStorageEvent extends APIEvent {
+public class APIUpdateCephBackupStorageMonEvent extends APIEvent {
     private CephBackupStorageInventory inventory;
 
-    public APIUpdateMonToCephBackupStorageEvent() {
+    public APIUpdateCephBackupStorageMonEvent() {
     }
 
-    public APIUpdateMonToCephBackupStorageEvent(String apiId) {
+    public APIUpdateCephBackupStorageMonEvent(String apiId) {
         super(apiId);
     }
 

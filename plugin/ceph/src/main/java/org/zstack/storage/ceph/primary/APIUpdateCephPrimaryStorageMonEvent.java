@@ -1,17 +1,19 @@
 package org.zstack.storage.ceph.primary;
 
 import org.zstack.header.message.APIEvent;
+import org.zstack.header.rest.RestResponse;
 
 /**
  * Created by frank on 8/6/2015.
  */
-public class APIUpdateMonToCephPrimaryStorageEvent extends APIEvent {
+@RestResponse(allTo = "inventory")
+public class APIUpdateCephPrimaryStorageMonEvent extends APIEvent {
     private CephPrimaryStorageInventory inventory;
 
-    public APIUpdateMonToCephPrimaryStorageEvent() {
+    public APIUpdateCephPrimaryStorageMonEvent() {
     }
 
-    public APIUpdateMonToCephPrimaryStorageEvent(String apiId) {
+    public APIUpdateCephPrimaryStorageMonEvent(String apiId) {
         super(apiId);
     }
 
