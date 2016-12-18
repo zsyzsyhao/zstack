@@ -1,8 +1,16 @@
 package org.zstack.ldap;
 
+import org.springframework.http.HttpMethod;
 import org.zstack.header.message.APIMessage;
 import org.zstack.header.message.APIParam;
+import org.zstack.header.rest.RestRequest;
 
+@RestRequest(
+        path = "/ldap/servers/actions",
+        isAction = true,
+        method = HttpMethod.PUT,
+        responseClass = APITestAddLdapServerConnectionEvent.class
+)
 public class APITestAddLdapServerConnectionMsg extends APIMessage {
     @APIParam(maxLength = 255)
     private String name;

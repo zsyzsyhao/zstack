@@ -129,7 +129,7 @@ public class TestLdapCleanInvalidBindings {
         APICleanInvalidLdapBindingsEvent cleanEvt1 = sender.send(cleanMsg1, APICleanInvalidLdapBindingsEvent.class);
 
         // some assertions
-        Assert.assertTrue(cleanEvt1.getAccountInventoryList().size() == 1);
-        Assert.assertTrue(cleanEvt1.getAccountInventoryList().get(0).getUuid().equals(accInv_ldap_2.getUuid()));
+        Assert.assertTrue(cleanEvt1.getInventories().size() == 1);
+        Assert.assertTrue(cleanEvt1.getInventories().get(0).getUuid().equals(accInv_ldap_2.getUuid()));
     }
 }
